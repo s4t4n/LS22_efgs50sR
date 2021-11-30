@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<modDesc descVersion="60">
+    <author>SbSh-s4t4n-Modastian</author>
+    <version>1.0.0.0</version>
+    <title>
+        <en>Jungheinrich EFG S50S realer</en>
+    </title>
+    <description>
+        <en>Originaler Stapler mit korrigierter Steuerung und Geschwindigkeit, wie der echte JH und Linde und Still !</en>
+    </description>
+    <iconFilename>store_efgS50S.dds</iconFilename>
+	<multiplayer supported="true"/>
+    <storeItems>
+        <storeItem xmlFilename="efgS50S.xml"/>
+    </storeItems>
+</modDesc>
