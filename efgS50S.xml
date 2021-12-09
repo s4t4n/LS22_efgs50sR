@@ -6,7 +6,7 @@
             <en>EFG S50s real</en></name>
         <specs>
             <power>57</power>
-            <maxSpeed>17</maxSpeed>
+            <maxSpeed>20</maxSpeed>
         </specs>
         <functions>
             <function>$l10n_function_forklift</function>
@@ -125,7 +125,7 @@
         <enterReferenceNode node="efgS50S_main_component1"/>
         <exitPoint node="exitPoint"/>
         <cameras>
-            <camera node="outdoorCamera1" rotatable="true" rotateNode="outdoorCameraTarget" limit="true" useWorldXZRotation="true" rotMinX="-1.4" rotMaxX="1" transMin="3.2" transMax="40" translation="0 0 4.25" rotation="-15 180 0">
+            <camera node="outdoorCamera1" rotatable="true" rotateNode="outdoorCameraTarget" limit="true" useWorldXZRotation="true" rotMinX="-1.4" rotMaxX="1" transMin="3.2" transMax="40" translation="0 0 4.25" rotation="-16 180 0">
                 <raycastNode node="cameraRaycastNode1"/>
                 <raycastNode node="cameraRaycastNode2"/>
                 <raycastNode node="cameraRaycastNode3"/>
@@ -212,7 +212,7 @@
         <suspension useCharacterTorso="true" weight="90" minRotation="0 -5 -5" maxRotation="0 5 5" suspensionParametersY="7 1" suspensionParametersZ="7 1"/>
     </suspensions>
     <drivable>
-        <steeringWheel node="steeringWheel" indoorRotation="960" outdoorRotation="200"/>
+        <steeringWheel node="steeringWheel" indoorRotation="960" outdoorRotation="800"/>
         <dashboards>
             <dashboard displayType="ROT" valueType="accelerationAxis" node="pedalGas" minRot="0 0 0" maxRot="12 0 0" doInterpolation="true" groups="MOTOR_ACTIVE"/>
             <dashboard displayType="ROT" valueType="decelerationAxis" node="pedalBrake" minRot="0 0 0" maxRot="-15 0 0" doInterpolation="true" groups="MOTOR_ACTIVE"/>
@@ -245,7 +245,8 @@
             <part node="arm02" startTime="1" endTime="2.4" startTrans="0 0.2 0"  animSpeed="0.1" endTrans="0 1.676 0"/>  <!-- Hubmast innen -->
 			<part node="0|4|0|0|4" startTime="2" endTime="4" startTrans="0 0 0" endTrans="0 -0.882 0"/>  <!-- Teleskop Hubzylinder -->
             <part node="0|4|0|0|5" startTime="2" endTime="4" startTrans="0 0 0" endTrans="0 1.46 0"/>  <!-- Hubmast innen 2 -->
-            <part node="liftChain" startTime="0" endTime="4" shaderParameter="scrollPosition" shaderStartValues="0 0 0 0" shaderEndValues="2.383 0 0 0"/>
+            <part node="liftChain" startTime="0" endTime="4" shaderParameter="scrollPosition" shaderStartValues="0 0 0 0" shaderEndValues="0.383 0 0 0"/>
+            <!-- <part node="0|4|0|0|6" startTime="0" endTime="4" shaderParameter="scrollPosition" shaderStartValues="0 0 0 0" shaderEndValues="-0.383 0 0 0"/> -->
 			
 			
         </animation>
@@ -274,12 +275,12 @@
     <cylindered>
         <movingTools>
             <movingTool node="arm02" playSound="true">
-                <controls axis="AXIS_FRONTLOADER_TOOL" invertAxis="true" mouseSpeedFactor="0.5" iconName="FORKLIFT_TRANSLATE_Y"/>
+                <controls axis="AXIS_FRONTLOADER_TOOL" invertAxis="true" mouseSpeedFactor="0.3" iconName="FORKLIFT_TRANSLATE_Y"/>
                 <animation animName="mainArmMovement" animSpeed="0.2" animAcceleration="1" animStartTime="0.05"/>
                 <componentJoint index="2" anchorActor="0"/>
             </movingTool>
             <movingTool node="arm01" playSound="true">
-                <controls axis="AXIS_FRONTLOADER_ARM" invertAxis="true" mouseSpeedFactor="0.2" iconName="FORKLIFT_ROTATE_X"/>
+                <controls axis="AXIS_FRONTLOADER_ARM" invertAxis="true" mouseSpeedFactor="0.07" iconName="FORKLIFT_ROTATE_X"/>
                 <rotation rotSpeed="7" rotAcceleration="150" rotMax="10" rotMin="-8"/>
                 <dependentPart node="arm01Hydraulic"/>
                 <componentJoint index="2" anchorActor="0"/>
@@ -372,6 +373,17 @@
             <shaderParameter name="colorMat1" value="JUNGHEINRICH_GREY1"/>
         </material>
     </baseMaterial>
+	
+	<baseMaterialConfigurations price="1600" useDefaultColors="true" defaultColorIndex="2">
+		<material name="efgS50S_mat" shaderParameter="colorMat0"/>
+		<material name="efgS50S_mat" shaderParameter="colorMat0"/>
+	</baseMaterialConfigurations>
+	
+	<baseMaterialConfigurations price="720" useDefaultColors="true" defaultColorIndex="7">
+		<material name="efgS50S_mat" shaderParameter="colorMat1"/>
+	</baseMaterialConfigurations>
+	
+	
     <wearable wearDuration="480" workMultiplier="5" fieldMultiplier="2"/>
     <washable dirtDuration="90" washDuration="1" workMultiplier="2" fieldMultiplier="2"/>
     <i3dMappings>
