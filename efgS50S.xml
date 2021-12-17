@@ -31,9 +31,9 @@
         <filename>efgS50S.i3d</filename>
         <sounds filename="$data/vehicles/jungheinrich/efgS50S/sounds/efgS50S.xml"/>
         <size width="2.2" length="4.5" height="2.65" lengthOffset="0.6"/>
-        <components maxMass="13100">
-            <component centerOfMass="0 0.45 0.7" solverIterationCount="35" mass="3505"/>
-            <component centerOfMass="0 -0.03 0" solverIterationCount="10" mass="4000"/>
+        <components maxMass="6755">
+            <component centerOfMass="0 0.45 0.7" solverIterationCount="35" mass="2005"/>
+            <component centerOfMass="0 -0.03 0" solverIterationCount="10" mass="1250"/>
             <component solverIterationCount="10" mass="500"/>
             <joint component1="1" component2="2" node="axisJoint" rotLimit="0 0 5" rotLimitSpring="0 0 4000" rotLimitDamping="0 0 75" maxRotDriveForce="0 0 10" rotDriveRotation="0 0 0" rotDriveSpring="0 0 30" rotDriveDamping="0 0 20" breakable="false"/>
             <joint component1="1" component2="3" node="componentJointFork" rotLimit="0 0 0" transLimit="0 0 0" rotLimitSpring="7500 7500 7500" rotLimitDamping="1 1 1" transLimitSpring="7500 7500 7500" transLimitDamping="1 1 1"/>
@@ -240,8 +240,8 @@
         <animation name="mainArmMovement">  <!-- Freihub-Mast Umbau -->
 			<part node="arm03" startTime="2" endTime="4"   startTrans="0 1.181 0"	   animSpeed="0.005" endTrans="0 2.626 0"/>  <!-- Gabelträger -->
 			<part node="arm03" startTime="0" endTime="0.3"   startTrans="0 0 0"	   animSpeed="0.005" endTrans="0 0.2 0"/>  <!-- Gabelträger -->
-			<part node="arm03" startTime="0.3" endTime="0.80" startTrans="0 0.2 0" animSpeed="0.2" endTrans="0 1.181 0"/>  <!-- Gabelträger -->
-            <part node="arm02" startTime="0.80" endTime="1" startTrans="0 0.05 0" animSpeed="0.005" endTrans="0 0.2 0"/>  <!-- Hubmast innen -->
+			<part node="arm03" startTime="0.3" endTime="0.80" startTrans="0 0.2 0" animSpeed="0.1" endTrans="0 1.181 0"/>  <!-- Gabelträger -->
+            <part node="arm02" startTime="0.80" endTime="1" startTrans="0 0.01 0" animSpeed="0.005" endTrans="0 0.2 0"/>  <!-- Hubmast innen -->
             <part node="arm02" startTime="1" endTime="2.4" startTrans="0 0.2 0"  animSpeed="0.1" endTrans="0 1.676 0"/>  <!-- Hubmast innen -->
 			<part node="0|4|0|0|4" startTime="2" endTime="4" startTrans="0 0 0" endTrans="0 -0.882 0"/>  <!-- Teleskop Hubzylinder -->
             <part node="0|4|0|0|5" startTime="2" endTime="4" startTrans="0 0 0" endTrans="0 1.46 0"/>  <!-- Hubmast innen 2 -->
