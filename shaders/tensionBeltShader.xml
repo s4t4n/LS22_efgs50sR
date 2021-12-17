@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="beltClipOffsets" target="beltClipOffsets" type="float4" defaultValue = "1 0 1 0" minValue = "0 0 0 0" maxValue = "100.0 100.0"/>
+        <Parameter name="beltUVScale" target="beltUVScale" type="float2" defaultValue = "1.0 1.0" minValue = "0.0 0.0" maxValue = "100.0 100.0"/>
+    </Parameters>
+    <UvUsages/>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+        
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+    float4 beltClipOffsets;
+    float2 beltUVScale;
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+    float beltClipPosition : TEXCOORDn;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+    Out.defaultTexCoords.y *= 10; // Transform from uv space to world space (the engine stores world space / 10)
+    Out.beltClipPosition = Out.defaultTexCoords.y;
+    Out.defaultTexCoords *= object.beltUVScale;
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+    alpha = (In.vs.beltClipPosition < object.beltClipOffsets.x || In.vs.beltClipPosition > object.beltClipOffsets.y) && (In.vs.beltClipPosition < object.beltClipOffsets.z || In.vs.beltClipPosition > object.beltClipOffsets.w);
+]]>
+            </CodeInjection>
+            <CodeInjection position="DO_ALPHA_TEST_FS">
+<![CDATA[
+#if !defined(DIFFUSE)
+    clip(alphaValue - 0.5);
+#endif
+    return;
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

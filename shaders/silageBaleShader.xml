@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="wrappingState"  target="wrappingState"  type="float"  group="base"    defaultValue = "0 0 0 0"                  minValue = "0.0 0.0 0.0 0.0"         maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name="colorScale"     target="colorScale"     type="float4" group="base"    defaultValue  ="0.6662 0.3839 0.5481 1.0" minValue = "0.0 0.0 0.0 0.0"         maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name="visibilityXZ"   target="visibilityXZ"   type="float2" group="clipPos" defaultValue = "5.0 -5.0 5.0 -5.0"        minValue = "-5.0 -5.0 -5.0 -5.0"     maxValue = "5.0 5.0 5.0 5.0"/>
+    </Parameters>
+    <UvUsages/>
+    <Textures>
+        <Texture name = "alphaMap"       defaultColorProfile = "linearRGB" isOptional="false" defaultFilename = "$data/shared/default_alpha.png"/>
+        <Texture name = "wrapDiffuseMap" defaultColorProfile = "sRGB"      isOptional="true"/>
+        <Texture name = "wrapNormalMap"  defaultColorProfile = "linearRGB" isOptional="true"/>
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="uv1" group="base"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name="alphaMesh" groups="base clipPos">
+<![CDATA[
+    #define CLIP_BY_SECONDUV
+    #define CLIP_BY_POSITION
+    #define BACK_LIGHT
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="CONFIG_DEFINES">
+<![CDATA[
+/*  Shader requires:
+     - uv1 - secondUV set, used for wrapping 
+     - alphaMap always be here, alpha is loaded from alphaMap
+*/
+    #define ALPHA_MAP
+    #define ALPHA_TESTED
+]]>
+            </CodeInjection>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+    float  wrappingState;
+    float4 colorScale;
+#if defined( CLIP_BY_POSITION )
+/*
+    visibilityXZ.xy - cut visibility based on objectspace position.x
+    visibilityXZ.zw - cut visibility based on objectspace position.z
+*/
+    float4 visibilityXZ;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+    float2 albedoMapTexCoords2 : TEXCOORDn;
+#if defined( CLIP_BY_POSITION )
+    float3 positionLocal       : TEXCOORDn;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_END">
+<![CDATA[
+#if defined( CLIP_BY_SECONDUV )
+    if (object.wrappingState >= 1.0){
+        Out.position = float4(0,0,0,-1); // hide the vertices 
+    }
+#endif
+#if defined( CLIP_BY_POSITION )
+    Out.positionLocal = In.position.xyz;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+    // Pass second UVSet to the Pixel Shader
+    Out.albedoMapTexCoords2 = convertDefaultTexCoords( In, object, In.texCoords1.xy );
+]]>
+            </CodeInjection>
+            <CodeInjection position="SAMPLERS">
+<![CDATA[
+#if defined(DIFFUSE) || defined(NORMAL_MAP) || defined(GLOSS_MAP)
+    sampler2D wrapDiffuseMap;
+    sampler2D wrapNormalMap;
+#endif
+#if defined(ALPHA_MAP)
+    sampler2D alphaMap;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="FS_GLOBALS">
+<![CDATA[
+#if defined(DIFFUSE) || defined(NORMAL_MAP) || defined(GLOSS_MAP)
+    float  wrapLerp;
+    float4 wrapDiffuse;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="START_FS">
+<![CDATA[
+#if defined(DIFFUSE) || defined(NORMAL_MAP) || defined(GLOSS_MAP)
+    float state = object.wrappingState*(10.5/4);
+    if (state > 0) {
+        state += 0.25/4;
+    }
+    state = min(state, 1);
+    globals.wrapDiffuse = tex2D(wrapDiffuseMap, In.vs.albedoMapTexCoords2);
+    globals.wrapDiffuse.rgb *= object.colorScale.rgb;
+    globals.wrapLerp = (globals.wrapDiffuse.w > (1-state));
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_UNNORMALIZED_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+#if defined( NORMAL_MAP )
+{
+    float3 origNormal = tex2D(normalMap, NORMAL_MAP_TEXCOORDS).xyz - 0.5;
+    float3 wrapNormal = tex2D(wrapNormalMap, In.vs.albedoMapTexCoords2).xyz - 0.5;
+    float3 normal = lerp(origNormal, wrapNormal, globals.wrapLerp);
+    return normal;
+}
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+#if defined( NORMAL_MAP )
+    return normalize(getUnnormalizedTangentSpaceNormal(In, globals, object));
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined( DIFFUSE )
+    diffuseColor = lerp(diffuseColor, globals.wrapDiffuse.xyz, globals.wrapLerp);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GLOSS_COLOR_FS">
+<![CDATA[
+#if defined(GLOSS_MAP)
+    // gloss for wrapped parts is pre-defined 
+    float3 wrapGloss = float3(0.85,1.0,0.0);
+    pbrMapValues = lerp( pbrMapValues, wrapGloss, globals.wrapLerp );
+    roughness = 1-pbrMapValues.x;
+    bakedAO   = pbrMapValues.y;
+    metalness = pbrMapValues.z;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_GET_LIGHTING_FS">
+<![CDATA[
+#if defined( BACK_LIGHT )
+    float NdotLNegative = dot(normal, lightDir);
+    if (NdotLNegative < 0) {
+        NdotLNegative = -NdotLNegative*0.5;
+    }
+    NdotLNegative = min(NdotLNegative, 1);
+    NdotL = saturate(dot(normal, lightDir));
+    lighting = ((atten*NdotLNegative) * diffuseShading + (atten*NdotL)* specularShading )* lightColor;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined(ALPHA_MAP)
+    alpha = tex2D(alphaMap, ALBEDO_MAP_TEXCOORDS).r;
+    #if defined( CLIP_BY_SECONDUV )
+        alpha *= 1-globals.wrapLerp;
+    #endif
+    #if defined( CLIP_BY_POSITION )
+        {
+            float mVis1 = In.vs.positionLocal.x < object.visibilityXZ.x;
+            float mVis2 = In.vs.positionLocal.x > object.visibilityXZ.y;
+            float mVis3 = In.vs.positionLocal.z < object.visibilityXZ.z;
+            float mVis4 = In.vs.positionLocal.z > object.visibilityXZ.w;
+            alpha *= mVis1*mVis2*mVis3*mVis4;
+        }
+    #endif
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

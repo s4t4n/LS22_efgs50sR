@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="colorInside" target="colorInside" type="float4" group="base" defaultValue="0.0 1.0 0.0 1.0" minValue="0.0 0.0 0.0 0.0" maxValue="1.0 1.0 1.0 1.0"/>
+        <Parameter name="colorOutside" target="colorOutside" type="float4" group="base" defaultValue="1.0 0.0 0.0 1.0" minValue="0.0 0.0 0.0 0.0" maxValue="1.0 1.0 1.0 1.0"/>
+
+        <Parameter name="heights11" target="heights11" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights12" target="heights12" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights13" target="heights13" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights14" target="heights14" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+
+        <Parameter name="heights21" target="heights21" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights22" target="heights22" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights23" target="heights23" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights24" target="heights24" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+
+        <Parameter name="heights31" target="heights31" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights32" target="heights32" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights33" target="heights33" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights34" target="heights34" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+
+        <Parameter name="heights41" target="heights41" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights42" target="heights42" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights43" target="heights43" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+        <Parameter name="heights44" target="heights44" type="float4" group="base" defaultValue="0.0 0.0 0.0 0.0" minValue="0.0 0.0 0.0 0.0" maxValue="300.0 300.0 300.0 300.0"/>
+    </Parameters>
+    <UvUsages>
+    </UvUsages>
+    <Textures>
+    </Textures>
+    <VertexAttributes>
+    </VertexAttributes>
+    <Variations>
+        <Variation name="circle" groups="base">
+<![CDATA[
+#define SHAPE_CIRCLE
+]]>
+        </Variation>
+        <Variation name="square" groups="base">
+<![CDATA[
+#define SHAPE_SQUARE
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0" alphaForceMode="use">
+        <CodeInjections>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+float4 colorInside;
+float4 colorOutside;
+
+float4 heights11;
+float4 heights12;
+float4 heights13;
+float4 heights14;
+
+float4 heights21;
+float4 heights22;
+float4 heights23;
+float4 heights24;
+
+float4 heights31;
+float4 heights32;
+float4 heights33;
+float4 heights34;
+
+float4 heights41;
+float4 heights42;
+float4 heights43;
+float4 heights44;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_WORLD_POSE_VS">
+<![CDATA[
+float4 mat[16] = {
+    object.heights11,
+    object.heights12,
+    object.heights13,
+    object.heights14,
+
+    object.heights21,
+    object.heights22,
+    object.heights23,
+    object.heights24,
+
+    object.heights31,
+    object.heights32,
+    object.heights33,
+    object.heights34,
+
+    object.heights41,
+    object.heights42,
+    object.heights43,
+    object.heights44
+};
+
+float2 ipos = (In.position.xz + 0.5) * 7;
+
+// Perform a bilinear interpolation
+int index = floor(ipos.x) + floor(ipos.y) * 8;
+float tl = mat[index >> 2][index & 3];
+index = ceil(ipos.x) + floor(ipos.y) * 8;
+float tr = mat[index >> 2][index & 3];
+index = floor(ipos.x) + ceil(ipos.y) * 8;
+float bl = mat[index >> 2][index & 3];
+index = ceil(ipos.x) + ceil(ipos.y) * 8;
+float br = mat[index >> 2][index & 3];
+
+float2 s = frac(ipos);
+
+float2 tA = lerp(tl, tr, s.x);
+float2 tB = lerp(bl, br, s.x);
+
+worldPosition.y += lerp(tA, tB, s.y);
+]]>
+            </CodeInjection>
+            <CodeInjection position="FS_GLOBALS">
+<![CDATA[
+float gMask; // Alpha mask for emission and alpha
+float gGradient; // Gradient slope from center
+float3 gColor; // Color for diffuse and emission
+]]>
+            </CodeInjection>
+            <CodeInjection position="START_FS">
+<![CDATA[
+float2 offsetUV = abs((In.vs.defaultTexCoords - 0.5) * 2);
+
+globals.gMask = 1;
+globals.gGradient = 0;
+
+#if defined(SHAPE_CIRCLE)
+    // Faded circle based on UV
+    float distToCenter = sqrt(dot(offsetUV, offsetUV));
+    float circle = 1 - saturate((distToCenter - 0.67) * 3);
+
+    globals.gMask = circle;
+    globals.gGradient = distToCenter;
+#elif defined(SHAPE_SQUARE)
+    float2 square = 1 - saturate((offsetUV - 0.67) * 3);
+    globals.gMask = min(square.x, square.y);
+    globals.gGradient = max(offsetUV.x, offsetUV.y);
+#endif
+
+globals.gColor = lerp(object.colorInside.rgb, object.colorOutside.rgb, globals.gGradient);
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+diffuseColor.rgb = globals.gColor;
+]]>
+            </CodeInjection>
+            <CodeInjection position="EMISSIVE_FS">
+<![CDATA[
+emissiveColor = globals.gColor * object.colorInside.a * globals.gMask * 0.2;
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+alpha = min(globals.gMask, 0.8) * object.colorInside.a;
+
+#if defined(ALPHA_BLENDED)
+    reflectingLightingScale = alpha;
+#endif
+]]>
+            </CodeInjection>
+
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

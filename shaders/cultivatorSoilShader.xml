@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="VertxoffsetVertexdeformMotionUVscale"     target="VertxoffsetVertexdeformMotionUVscale"     type="float4" defaultValue = "-6.0 1.0 0.0 1.5" minValue = "-100.0 -1.0 -10.0 -10.0" maxValue = "100.0 1.0 10.0 10.0"/>
+        <Parameter name="prevVertxoffsetVertexdeformMotionUVscale" target="prevVertxoffsetVertexdeformMotionUVscale" type="float4" defaultValue = "-6.0 1.0 0.0 1.5" minValue = "-100.0 -1.0 -10.0 -10.0" maxValue = "100.0 1.0 10.0 10.0"/>
+    </Parameters>
+    <UvUsages/>
+    <Variations/>
+    <LodLevel startDistance = "0">
+        <CodeInjections>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+    /*
+        Vertxoffset  - scale vertexes into negative Y direction ( set by artist )
+        Vertexdeform - dynamic parameter ( 0 .. 1 ), 0 - minimum hight, 1 - maximum hight ( set by script )
+        Motion       - dynamic parameter, should be changed by time and speed of the vehicle ( set by script )
+        UVscale      - scale of the source texture ( set by artist )
+    */
+    float4 VertxoffsetVertexdeformMotionUVscale;
+    float4 prevVertxoffsetVertexdeformMotionUVscale;
+]]>
+            </CodeInjection>
+            <CodeInjection position="LIB_FUNCTION_VS">
+<![CDATA[
+// Custom vertex functions
+//
+// the same vertex shader code which is re-used twice in GET_POSITION_VS and GET_PREV_POSITION_VS
+// only with different values
+//
+float3 getCustomPositionVS( VS_INPUT    In,
+                      ObjectParameters& object,
+                                float   mScriptTime ){
+    // =================================
+    float mMotion = 0.25 * mScriptTime;
+    float mSpeedPos1 = ( In.position.y + In.position.z ) + 1.0 * mMotion;
+    float mSpeedPos2 = In.position.z - abs( In.position.y + In.position.x  ) + 2.0 * mMotion;
+    float4 mSinCos;
+    sincos( 16.24 * mSpeedPos1 + 13.5, mSinCos.x, mSinCos.y );
+    sincos(  6.50 * mSpeedPos2       , mSinCos.z, mSinCos.w );
+    float2 texCoord0 = In.texCoords0.xy;
+    float3 offset1 = 1.00 * In.normal.xyz * (  mSinCos.x + mSinCos.y ) * texCoord0.x * texCoord0.x;
+    float3 offset2 = 0.20 * In.normal.xyz * (  mSinCos.z + mSinCos.w ) * texCoord0.x ;
+    float3 mDeformedPosition1 = offset1 + offset2;
+    // FADEIN
+    float3 mDeformedPosition2 = lerp( object.VertxoffsetVertexdeformMotionUVscale.x * float3( 0, 1, 0 ) * texCoord0.x, float3( 0, 0, 0 ), object.VertxoffsetVertexdeformMotionUVscale.y );
+    return In.position.xyz + mDeformedPosition1 + mDeformedPosition2;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_POSITION_VS">
+<![CDATA[
+return getCustomPositionVS(In, object, object.VertxoffsetVertexdeformMotionUVscale.z);
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_PREV_POSITION_VS">
+<![CDATA[
+return getCustomPositionVS(In, object, object.prevVertxoffsetVertexdeformMotionUVscale.z);
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_WORLD_POSE_VS">
+<![CDATA[
+    prevWorldPosition = mul(object.prevModelMatrix, float4(prevPosition, 1));
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+    float mSpeed    = 0.25 * object.VertxoffsetVertexdeformMotionUVscale.z ;
+    float mUVscale  = object.VertxoffsetVertexdeformMotionUVscale.w ;
+    Out.defaultTexCoords   = mUVscale.x * Out.defaultTexCoords  + float2( mSpeed * mUVscale, 0 );
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

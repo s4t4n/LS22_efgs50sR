@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="fadeProgress"     target="fadeProgress"      type="float4" group="base" defaultValue = "1.0 1.0 0.0 0.0" minValue = "-1.0 -1.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+    </Parameters>
+    <UvUsages/>
+    <Textures>
+        <Texture name="fadeMask"  group="base" defaultColorProfile = "linearRGB" defaultFilename = "$data/effects/unload/fadeMask_diffuse.png" defaultWrap="false"/>
+        <Texture name="cloudMask" group="base" defaultColorProfile = "linearRGB" defaultFilename = "$data/effects/unload/clouds_diffuse.png"/>
+    </Textures>
+    <Variations/>
+    <VertexAttributes>
+        <VertexAttribute name="uv1"   group="base"/>
+        <VertexAttribute name="color" group="base"/>
+    </VertexAttributes>
+    <LodLevel startDistance="0" alphaForceMode="use">
+        <CodeInjections>
+            <CodeInjection position="SAMPLERS">
+<![CDATA[
+    sampler2D fadeMask;
+    sampler2D cloudMask;
+]]>
+            </CodeInjection>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+    /*
+    fadeProgress.x - FadeIN:    start = -1.0 end = 1.0
+    fadeProgress.y - FadeOUT:   start = 1.0 end = -1.0
+
+    Fully Visible       fadeProgress.x = 1.0        "1.0 1.0 0.0 0.0"
+                        fadeProgress.y = 1.0
+    Fully Invisible     fadeProgress.x = -1.0       "-1.0 -1.0 0.0 0.0"
+                        fadeProgress.y = -1.0
+    */
+    float4 fadeProgress;
+]]>
+            </CodeInjection>
+            <CodeInjection position="LIB_FUNCTION_VS">
+<![CDATA[
+// Custom vertex functions
+float3 getCustomPositionVS( VS_INPUT    In,
+                      ObjectParameters& object,
+                                float   mSpeed ){
+    // =================================
+    float3 mDeformed = In.position.xyz;
+    float3 mSpeedPos = In.texCoords1.x + mSpeed; // TODO conversion needed?
+    // compute sin and cos for this angle
+    float3 offset = 14.1 * float3( -0.114, 0.163, -0.453 ) * (  sin( 9.24 * mSpeedPos.z + 13.5 ) * cos( 13.50 * mSpeedPos.z  )  ) * In.texCoords1.x * In.texCoords1.x;
+    mDeformed += offset;
+    return mDeformed.xyz;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+float2 defaultTexCoords2 : TEXCOORDn;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+    Out.defaultTexCoords2 = convertDefaultTexCoords( In, object, In.texCoords1.xy );
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_POSITION_VS">
+<![CDATA[
+    float mSpeed = - 1.0 * cTime_s;
+    float3 mDeformed = getCustomPositionVS(In, object, mSpeed);
+#if defined(SKINNING)
+    return skinPoint(mDeformed.xyz, In, object) - float3(invViewMatrix[0][3], invViewMatrix[1][3], invViewMatrix[2][3]);
+#else
+    return mDeformed.xyz;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_PREV_POSITION_VS">
+<![CDATA[
+    float mSpeed = - 1.0 * cPrevTime_s;
+    float3 mDeformed = getCustomPositionVS(In, object, mSpeed);
+#if defined(SKINNING)
+    return skinPrevPoint(mDeformed.xyz, In, object) - float3(invViewMatrix[0][3], invViewMatrix[1][3], invViewMatrix[2][3]);
+#else
+    return mDeformed.xyz;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_WORLD_POSE_VS">
+<![CDATA[
+    prevWorldPosition = mul(object.prevModelMatrix, float4(prevPosition, 1));
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+    float  gSpeed;
+    float  gUVscale;
+    float4 gUV;
+    float  gMask;
+    float  gAlpha;
+    float4 gVertexColor;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "START_FS">
+<![CDATA[
+    globals.gSpeed       = -4.0 * cTime_s;
+    globals.gUVscale     = 4.0;
+    globals.gUV.rg       =        globals.gUVscale.x * In.vs.defaultTexCoords + globals.gSpeed * globals.gUVscale.x * float2( 1.0 , -0.05 );
+    globals.gUV.ba       = 1.25 * globals.gUVscale.x * In.vs.defaultTexCoords + globals.gSpeed * globals.gUVscale.x * float2( 1.0 ,  0.15 );
+    globals.gMask        = clamp( dot( float4(0.1,0.7,0.1,0.0), tex2D( cloudMask, ( 1 / globals.gUVscale ) * globals.gUV.rg ).rgba ), 0.0, 1.0 );
+    globals.gAlpha       = 1.0;
+    globals.gVertexColor = In.vs.vertexColor.rgba;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_UNNORMALIZED_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+ #if defined( NORMAL_MAP )
+    float3 mNormal1  = tex2D( normalMap, globals.gUV.rg ).xyz;
+    float3 mNormal2  = tex2D( normalMap, globals.gUV.ba ).xyz;
+    return lerp( mNormal1, mNormal2, globals.gMask ) - 0.5;
+ #endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+    float  mResultAlpha  = 1;
+    float2 mUV = In.vs.defaultTexCoords2;
+#if defined( ALBEDO_MAP )
+    float mWaterA = tex2D( cloudMask, float2(1.0,7.0) * globals.gUV.rg ).g;
+    float mWaterB = tex2D( cloudMask, float2(1.0,7.0) * globals.gUV.ba ).g;
+    mResultAlpha = lerp( mWaterA, mWaterB, globals.gMask );
+    mResultAlpha = lerp( mResultAlpha, 0, tex2D( cloudMask, ( 1 / globals.gUVscale ) * globals.gUV.rg ).b );
+#endif
+    float mEndAlpha = pow( mUV.x, 10 );
+    mResultAlpha = saturate( mResultAlpha );
+    mResultAlpha -= mEndAlpha;
+    // =================================
+    float mFadeIN  = 1.0;
+    float mFadeOUT = 1.0;
+    // -1.0 ==>  1.0
+    mFadeIN   = tex2D( fadeMask, float2( object.fadeProgress.x, 0 ) + ( 1 - mUV ) ).r;
+    //  1.0 ==> -1.0
+    mFadeOUT  = tex2D( fadeMask, float2( object.fadeProgress.y, 0 ) + mUV  ).r;
+    // =================================
+    mResultAlpha = saturate(mResultAlpha * mFadeIN * mFadeOUT);
+    globals.gAlpha = mResultAlpha * globals.gVertexColor.a;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GLOSS_COLOR_FS">
+<![CDATA[
+/*
+#if defined( SPECULAR )
+    roughness = 1 - globals.gAlpha;
+#endif
+*/
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+    alpha *= globals.gAlpha;
+#if defined(ALPHA_BLENDED)
+    reflectingLightingScale = alpha;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="FINAL_POS_FS">
+<![CDATA[
+#if defined( DEBUG_SHOW_PARALLAX )
+    oColor.rgb = globals.gMask;
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

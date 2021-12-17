@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "morphPosition" target = "morphPosition" type = "float4" group="base"  defaultValue = "0.0 1.0 1.0 0.0" minValue = "0.0 0.0 0.01 0.0" maxValue = "1.0 1.0 10.0 10.0"/>
+        <Parameter name = "offsetUV"      target = "offsetUV"      type = "float4" group="base"  defaultValue = "0.0 0.0 0.0 0.0" />
+        <Parameter name = "fillTypeId"    target = "fillTypeId"    type = "float"  group="array" defaultValue = "0"/>
+    </Parameters>
+    <UvUsages/>
+    <Textures>
+        <Texture name="baseMap"   group="array" type="2dArray"/>
+        <Texture name="glossMap"  group="array" type="2dArray"/>
+        <Texture name="normalMap" group="array" type="2dArray"/>
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="uv1"   group="base"/>
+        <VertexAttribute name="color" group="base"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name = "fillPlanesArray" groups="base array">
+<![CDATA[
+    #define FILLPLANES_ARRAY
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="CONFIG_DEFINES">
+<![CDATA[
+// use alpha_test to toggle visibility 
+#if !defined(ALPHA_BLENDED)
+    #define ALPHA_TESTED
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="SHARED_START">
+<![CDATA[
+#if defined(FILLPLANES_ARRAY)
+    #define ALBEDO_MAP_TYPE sampler2DArray
+    #define NORMAL_MAP_TYPE sampler2DArray
+    #define GLOSS_MAP_TYPE  sampler2DArray
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+/*
+    morphPosition.x - fadeIN  morph position [0..1]
+    morphPosition.y - fadeOUT morph position [0..1]
+    morphPosition.z - morph compression (calculated in maya)
+    morphPosition.w - not used yet
+*/
+    float4 morphPosition;
+/*
+    offsetUV.xy - translate
+    offsetUV.zw - startBlend, endBlend position.x
+*/
+    float4 offsetUV;
+#if defined(FILLPLANES_ARRAY)
+    float fillTypeId;  // index from fillType Array
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="LIB_FUNCTION_VS">
+<![CDATA[
+// Custom vertex functions
+float3 getCustomPositionVS( VS_INPUT    In,
+                      ObjectParameters& object ){
+    // =================================
+    float3 mDeformedPosition = In.position.xyz;
+    {
+        float4 mVertexColor = In.color.rgba;
+        mVertexColor.rgb    = 2 * mVertexColor.rgb - 1; // values compressed between -1.0 .. 1.0
+        float refX = convertDefaultTexCoords(In, object, In.texCoords1).x;
+        float scale1 = refX >= object.morphPosition.x && refX <= object.morphPosition.y;
+        mDeformedPosition += mVertexColor.rgb*(1-scale1);
+    }
+    return mDeformedPosition.xyz;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+float2 albedoMapTexCoord2 : TEXCOORDn;
+float  vertexAlpha        : TEXCOORDn;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+    Out.defaultTexCoords   = 2.0 * ( convertDefaultTexCoords( In, object, In.texCoords0.xy ) + object.offsetUV.xy ); // uvScale.xy was here
+    Out.albedoMapTexCoord2 = convertDefaultTexCoords( In, object, In.texCoords1.xy );
+    Out.vertexAlpha = In.color.a;
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_POSITION_VS">
+<![CDATA[
+    float3 mDeformedPosition = getCustomPositionVS(In, object);
+    #if defined(SKINNING)
+        return skinPoint( mDeformedPosition.xyz, In, object) - float3(invViewMatrix[0][3], invViewMatrix[1][3], invViewMatrix[2][3]);
+    #else
+        return mDeformedPosition.xyz;
+    #endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_PREV_POSITION_VS">
+<![CDATA[
+    float3 mDeformedPosition = getCustomPositionVS(In, object);
+    #if defined(SKINNING)
+        return skinPrevPoint( mDeformedPosition.xyz, In, object) - float3(invViewMatrix[0][3], invViewMatrix[1][3], invViewMatrix[2][3]);
+    #else
+        return mDeformedPosition.xyz;
+    #endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_WORLD_POSE_VS">
+<![CDATA[
+    prevWorldPosition = mul(object.prevModelMatrix, float4(prevPosition, 1));
+]]>
+            </CodeInjection>
+            <CodeInjection position = "LIB_FUNCTION_FS">
+<![CDATA[
+// 0..1 transitional gradient based on 3 inputs
+// mTexture    - cloud nosie style texture
+// mGradient   - input source gradient (smooth 0..1 transition)
+// mAlphaShift - gradient smoothness (0.1 - almost instant switch, 0.5 - smooth transition)
+float alphaGradient(float mTexture, float mGradient, float mAlphaShift){
+    return saturate( (-1 + mGradient + mTexture - mAlphaShift) / mAlphaShift);
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_UNNORMALIZED_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+ #if defined( NORMAL_MAP )
+    #if defined(FILLPLANES_ARRAY)
+        return tex2D( normalMap, float3(NORMAL_MAP_TEXCOORDS, object.fillTypeId) ).xyz - 0.5;
+    #endif
+ #endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined( ALBEDO_MAP )
+    #if defined(FILLPLANES_ARRAY)
+        diffuseColor = tex2D(baseMap, float3(ALBEDO_MAP_TEXCOORDS, object.fillTypeId)).xyz;
+    #endif
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GLOSS_COLOR_FS">
+<![CDATA[
+#if defined(GLOSS_MAP)
+    #if defined(FILLPLANES_ARRAY)
+        pbrMapValues = tex2D(glossMap, float3(GLOSS_MAP_TEXCOORDS, object.fillTypeId));
+    #endif
+    roughness = 1-pbrMapValues.x;
+    bakedAO   = pbrMapValues.y;
+    metalness = pbrMapValues.z;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined(ALPHA_BLENDED) || defined(ALPHA_TESTED)
+    #if defined(FILLPLANES_ARRAY)
+        alpha = tex2D(baseMap, float3(ALBEDO_MAP_TEXCOORDS, object.fillTypeId)).a;
+    #endif
+    float refX = In.vs.albedoMapTexCoord2.x;
+    float mVisibility = refX >= object.morphPosition.x && refX <= object.morphPosition.y;
+    alpha *= saturate(mVisibility * alphaGradient(alpha,In.vs.vertexAlpha,0.1));
+#endif
+]]>
+            </CodeInjection>
+          </CodeInjections>
+    </LodLevel>
+</CustomShader>

@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="fillTypeId"                               target="fillTypeId"                               type="float"  group="base" defaultValue = "0"/>
+        <Parameter name="VertxoffsetVertexdeformMotionUVscale"     target="VertxoffsetVertexdeformMotionUVscale"     type="float4" group="base" defaultValue = "-35.0 1.0 0.0 6.0" minValue = "-100.0 -1.0 -10.0 -10.0" maxValue = "100.0 1.0 10.0 10.0"/>
+        <Parameter name="prevVertxoffsetVertexdeformMotionUVscale" target="prevVertxoffsetVertexdeformMotionUVscale" type="float4" group="base" defaultValue = "-35.0 1.0 0.0 6.0" minValue = "-100.0 -1.0 -10.0 -10.0" maxValue = "100.0 1.0 10.0 10.0"/>
+        <Parameter name="offsetUV"                                 target="offsetUV"                                 type="float4" group="base" defaultValue = "0 0 0 0"/>
+    </Parameters>
+    <UvUsages/>
+    <Textures>
+        <Texture name="baseMap"   group="base" type="2dArray"/>
+        <Texture name="glossMap"  group="base" type="2dArray"/>
+        <Texture name="normalMap" group="base" type="2dArray"/>
+    </Textures>
+    <Variations/>
+    <LodLevel startDistance = "0">
+        <CodeInjections>
+            <CodeInjection position="SHARED_START">
+<![CDATA[
+#define ALBEDO_MAP_TYPE sampler2DArray
+#define NORMAL_MAP_TYPE sampler2DArray
+#define GLOSS_MAP_TYPE  sampler2DArray
+]]>
+            </CodeInjection>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+    /*
+        Vertxoffset  - scale vertexes into negative Y direction ( set by artist )
+        Vertexdeform - dynamic parameter ( 0 .. 1 ), 0 - minimum hight, 1 - maximum hight ( set by script )
+        Motion       - dynamic parameter, should be changed by time and speed of the vehicle ( set by script )
+        UVscale      - scale of the source texture ( set by artist )
+    */
+    float4 VertxoffsetVertexdeformMotionUVscale;
+    float4 prevVertxoffsetVertexdeformMotionUVscale;
+    float fillTypeId;  // index from fillType Array
+    float4 offsetUV;
+]]>
+            </CodeInjection>
+            <CodeInjection position="SAMPLERS">
+<![CDATA[
+/*
+#define ALBEDO_MAP_LAYER   object.fillTypeId
+#define NORMAL_MAP_LAYER   object.fillTypeId
+#define GLOSS_MAP_LAYER    object.fillTypeId
+#define EMISSIVE_MAP_LAYER object.fillTypeId
+*/
+]]>
+            </CodeInjection>
+            <CodeInjection position="LIB_FUNCTION_VS">
+<![CDATA[
+// Custom vertex functions
+//
+// the same vertex shader code which is re-used twice in GET_POSITION_VS and GET_PREV_POSITION_VS
+// only with different values
+//
+float3 getCustomPositionVS( VS_INPUT    In,
+                      ObjectParameters& object,
+                                float   mScriptTime ){
+    // =================================
+    float mMotion = 0.25 * mScriptTime;
+    float mSpeedPos1 = ( In.position.y + In.position.z ) + 1.0 * mMotion;
+    float mSpeedPos2 = In.position.z - abs( In.position.y + In.position.x  ) + 2.0 * mMotion;
+    float4 mSinCos;
+    sincos( 16.24 * mSpeedPos1 + 13.5, mSinCos.x, mSinCos.y );
+    sincos(  6.50 * mSpeedPos2       , mSinCos.z, mSinCos.w );
+    float2 texCoord0 = In.texCoords0.xy;
+    float3 offset1 = 1.00 * In.normal.xyz * (  mSinCos.x + mSinCos.y ) * texCoord0.x * texCoord0.x;
+    float3 offset2 = 0.20 * In.normal.xyz * (  mSinCos.z + mSinCos.w ) * texCoord0.x ;
+    float3 mDeformedPosition1 = offset1 + offset2;
+    mDeformedPosition1 *= 2;
+    float3 mDeformedPosition2 = In.position.xyz;
+    mDeformedPosition2.y = (In.position.y + 0.7)*lerp(1/(object.VertxoffsetVertexdeformMotionUVscale.x+0.7), 1, object.VertxoffsetVertexdeformMotionUVscale.y) - 0.7;
+    mDeformedPosition2.x = In.position.x * (object.VertxoffsetVertexdeformMotionUVscale.y*0.2 + 0.8);
+    mDeformedPosition2.z = In.position.z * (object.VertxoffsetVertexdeformMotionUVscale.y*0.3 + 0.7);
+    return mDeformedPosition1 + mDeformedPosition2;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_POSITION_VS">
+<![CDATA[
+return getCustomPositionVS(In, object, object.VertxoffsetVertexdeformMotionUVscale.z);
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_PREV_POSITION_VS">
+<![CDATA[
+return getCustomPositionVS(In, object, object.prevVertxoffsetVertexdeformMotionUVscale.z);
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_WORLD_POSE_VS">
+<![CDATA[
+    prevWorldPosition = mul(object.prevModelMatrix, float4(prevPosition, 1));
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+    //Out.defaultTexCoords = (worldPosition.xz+float2(invViewMatrix[0][3], invViewMatrix[2][3]))*1.6;
+    Out.defaultTexCoords *= object.VertxoffsetVertexdeformMotionUVscale.w ;
+    Out.defaultTexCoords += object.offsetUV.xy;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_UNNORMALIZED_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+ #if defined( NORMAL_MAP )
+    return tex2D(normalMap, float3(NORMAL_MAP_TEXCOORDS, object.fillTypeId)).xyz - 0.5;;
+ #endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined( ALBEDO_MAP )
+    diffuseColor = tex2D(baseMap, float3(ALBEDO_MAP_TEXCOORDS, object.fillTypeId)).xyz;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GLOSS_COLOR_FS">
+<![CDATA[
+#if defined(GLOSS_MAP)
+    float3 mResultPBR = tex2D(glossMap, float3(GLOSS_MAP_TEXCOORDS, object.fillTypeId));
+    roughness = 1-mResultPBR.x;
+    bakedAO   = mResultPBR.y;
+    metalness = mResultPBR.z;
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

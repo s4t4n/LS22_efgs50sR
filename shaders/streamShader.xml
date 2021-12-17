@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="directions" target="directions" type="float4" defaultValue="0.15 0 0.13 0" />
+    </Parameters>
+    <UvUsages/> 
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+    float4 directions;
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+    float2 defaultTexCoords2  : TEXCOORDn;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+#if defined(ALBEDO_MAP)
+    float2 uv = getDefaultTexCoords(In,object);
+    float2 uv1 = uv + object.directions.xy * cTime_s;
+    float2 uv2 = uv+float2(0.5, 0.2) + object.directions.zw * cTime_s;
+    Out.defaultTexCoords = uv1;
+    Out.defaultTexCoords2 = uv2;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined(ALBEDO_MAP)
+    float4 diffuseColor2 = tex2D(baseMap, In.vs.defaultTexCoords2);
+    diffuseColor.xyz = lerp(diffuseColor.xyz, diffuseColor2.xyz, diffuseColor2.w);
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "placeableColorScale" target = "placeableColorScale" type = "float4" group="base" defaultValue = "0.0 1.0 0.0 0.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+    </Parameters>
+    <UvUsages/>
+    <Variations>
+        <Variation name="reflector">
+<![CDATA[
+    #define REFLECTOR_SHADING
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+    float4 placeableColorScale;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+#if defined( REFLECTOR_SHADING )
+    float  gAlpha;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "START_FS">
+<![CDATA[
+#if defined( REFLECTOR_SHADING )
+    globals.gAlpha = 1.0;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_GET_LIGHTING_FS">
+<![CDATA[
+#if defined( REFLECTOR_SHADING )
+    float VdotL = max(dot(viewDir, lightDir), 0.00001); 
+    float specDistribution  = saturate(pow(VdotL,20));
+    float3 retroReflection = globals.gAlpha*specDistribution * diffuseColor*4;
+    lighting = (atten*NdotL) * (diffuseShading + specularShading + retroReflection) * lightColor;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+    if (object.placeableColorScale.w > 0){
+        diffuseColor = lerp(diffuseColor,object.placeableColorScale.rgb,saturate(0.1+getFresnel( facing, 0.15 , 4.0 ))*object.placeableColorScale.w);
+    }
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined(ALPHA_BLENDED)
+    reflectingLightingScale = alpha;
+    #if defined( REFLECTOR_SHADING )
+        globals.gAlpha = alpha;
+    #endif
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

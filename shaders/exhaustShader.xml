@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "param"        target = "param"        type = "float4" defaultValue = "0.0 0.0 0.0 1.0" minValue = "-5 -5 -5 0.01" maxValue = "5 5 5 2.0"/>
+        <Parameter name = "exhaustColor" target = "exhaustColor" type = "float4" defaultValue = "0.5 0.5 0.5 1.0" minValue = "0 0 0 0"       maxValue = "1 1 1 10"/>
+    </Parameters>
+    <UvUsages/>
+    <Textures>
+        <Texture name = "mCloudMap" defaultColorProfile = "linearRGB" defaultFilename = "$data/effects/unload/clouds_diffuse.png"/>
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="uv1"   group="base"/>
+        <VertexAttribute name="color" group="base"/>
+    </VertexAttributes>
+    <Variations/>
+    <LodLevel startDistance="0" alphaForceMode = "use">
+        <CodeInjections>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+    /*
+    param.x = Rx - rotate along ZY
+    param.y = Rz - rotate along XY
+    param.z = not used
+    param.a = global scale
+    */
+    float4 param;
+    float4 exhaustColor;
+]]>
+            </CodeInjection>
+            <CodeInjection position="LIB_FUNCTION_VS">
+<![CDATA[
+// Custom vertex functions
+float3 getDeformedPos(VS_INPUT In, ObjectParameters& object, float mTime){
+    //         Ry                                   Rx                               Rz
+    // [ cos(time)   0   -sin(time)]      [ 1        0        0      ]     [ cos(time) -sin(time)  0]
+    // [    0        1       0     ]      [ 0 cos(time)    -sin(time)]     [ sin(time)  cos(time)  0]
+    // [ sin(time)   0    cos(time)]      [ 0 sin(time)     cos(time)]     [ 0             0       1]
+    //          Rz                          Rx
+    // [ cos(z) -sin(z)  0]  [ 1        0        0     ]  [ cos(z)  -sin(z)*cos(x)  -sin(z)*-sin(x) ]
+    // [ sin(z)  cos(z)  0]  [ 0      cos(x)    -sin(x)]  [ sin(z)   cos(z)*cos(x)   cos(z)*-sin(x) ]
+    // [ 0       0       1]  [ 0      sin(x)     cos(x)]  [ 0        sin(x)               cos(x)    ]
+    
+    // WOBBLING
+    float  mSkinning    = saturate( sqrt( In.texCoords0.y ) ); // TODO conversion needed?
+    float  mRx          = object.param.x;
+    float  mRz          = object.param.y;
+    float  mAmpl        = 0.25;
+    float3 mScale      = float3( object.param.a, object.param.a, object.param.a);
+    float2 mSinCos;
+
+    sincos( 100 * In.texCoords0.y - 20 * mTime, mSinCos.x, mSinCos.y );
+    float3 mWobblingPosition = mAmpl * In.normal.xyz * (  mSinCos.x + mSinCos.y ) * mSkinning;
+
+    // ROTATION
+    float3 mSourcePosition      = (In.position.xyz + mWobblingPosition.xyz)*mScale;
+    autoclear float2 mSinCosX;
+    autoclear float2 mSinCosZ;
+    sincos( mRx * mSkinning, mSinCosX.x, mSinCosX.y );
+    sincos( mRz * mSkinning, mSinCosZ.x, mSinCosZ.y );
+    float3 mResultPosition;
+    mResultPosition.x = dot( mSourcePosition.xyz, float3( mSinCosZ.y, -mSinCosZ.x * mSinCosX.y, -mSinCosZ.x * -mSinCosX.x) );
+    mResultPosition.y = dot( mSourcePosition.xyz, float3( mSinCosZ.x,  mSinCosZ.y * mSinCosX.y,  mSinCosZ.y * -mSinCosX.x ) );
+    mResultPosition.z = dot( mSourcePosition.yz,  float2( mSinCosX.x,  mSinCosX.y ) );
+
+    return  mResultPosition;
+}
+float3 getDeformedVector(VS_INPUT In, ObjectParameters& object, float3 inputVector){
+    float  mSkinning    = saturate( sqrt( In.texCoords0.y ) ); // TODO conversion needed?
+    float  mRx          = object.param.x;
+    float  mRz          = object.param.y;
+
+    // ROTATION
+    autoclear float2 mSinCosX;
+    autoclear float2 mSinCosZ;
+    sincos( mRx * mSkinning, mSinCosX.x, mSinCosX.y );
+    sincos( mRz * mSkinning, mSinCosZ.x, mSinCosZ.y );
+    float3 mResultVector;
+    mResultVector.x = dot( inputVector.xyz, float3( mSinCosZ.y, -mSinCosZ.x * mSinCosX.y, -mSinCosZ.x * -mSinCosX.x) );
+    mResultVector.y = dot( inputVector.xyz, float3( mSinCosZ.x,  mSinCosZ.y * mSinCosX.y,  mSinCosZ.y * -mSinCosX.x ) );
+    mResultVector.z = dot( inputVector.yz,  float2( mSinCosX.x,  mSinCosX.y ) );
+
+    return mResultVector;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+float2 defaultTexCoords2 : TEXCOORDn;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+    // Pass second UVSet to the Pixel Shader
+    Out.defaultTexCoords2 = convertDefaultTexCoords(In, object, In.texCoords1.xy);
+    // =================================
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_POSITION_VS">
+<![CDATA[
+    return  getDeformedPos(In, object, cTime_s);
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_PREV_POSITION_VS">
+<![CDATA[
+    return  getDeformedPos(In, object, cPrevTime_s);
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_WORLD_POSE_VS">
+<![CDATA[
+    prevWorldPosition = mul(object.prevModelMatrix, float4(prevPosition, 1));
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_NORMAL_VS">
+<![CDATA[
+    return getDeformedVector(In, object,In.normal.xyz);
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+sampler2D mCloudMap;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+    float gAlphaValue;
+    float gRefractionValue;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "START_FS">
+<![CDATA[
+    float2 mSpeed   = float2( 0.1, -1.5 ) * cTime_s;
+    float2 mUVscale = float2( 0.75, 1.75 );
+    float2 mUVOrig1  = ALBEDO_MAP_TEXCOORDS.xy;
+    float2 mUVOrig2  = In.vs.defaultTexCoords2;
+    float4 mUV1, mUV2;
+    mUV1.rg   =        mUVscale * ( mUVOrig1 + mSpeed );
+    mUV1.ba   = 1.33 * mUVscale * ( mUVOrig1 + mSpeed );
+    mUV2.rg   =        mUVscale * ( mUVOrig2 + mSpeed );
+    mUV2.ba   = 1.33 * mUVscale * ( mUVOrig2 + mSpeed );
+    float mAlphaValue1, mAlphaValue2;
+
+    float mAlphaGradient = 1 - mUVOrig1.y;
+
+    float2 mA           = tex2D( mCloudMap, mUV1.rg ).ba;
+    float2 mB           = tex2D( mCloudMap, mUV1.ba ).ba;
+
+    float2 mC           = tex2D( mCloudMap, mUV2.rg ).ba;
+    float2 mD           = tex2D( mCloudMap, mUV2.ba ).ba;
+
+    mAlphaValue1        = mA.x * mB.x * mA.y * mB.y;
+    mAlphaValue1        = clamp( 1.0 * mAlphaValue1, 0.0 , 1.0 );
+
+    mAlphaValue2        = mC.x * mD.x * mC.y * mD.y;
+    mAlphaValue2        = clamp( 1.0 * mAlphaValue2, 0.0 , 1.0 );
+
+    globals.gAlphaValue = lerp( mAlphaValue1, mAlphaValue2, In.vs.vertexColor.r );
+
+    globals.gRefractionValue    = globals.gAlphaValue * (mAlphaGradient + 0.2) * 0.8;
+    globals.gAlphaValue *= mAlphaGradient * mAlphaGradient;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+    diffuseColor = object.exhaustColor.xyz;
+    float mAlphaFresnel      = 1 - facing;
+    mAlphaFresnel            *= mAlphaFresnel;
+    globals.gAlphaValue      *= mAlphaFresnel;
+    globals.gRefractionValue *= mAlphaFresnel;
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_REFRACTION_COLOR_TEX_FS">
+<![CDATA[
+#if defined( REFRACTION_MAP )
+    float2 mFinalCoord = In.vs.screenPos.xy/In.vs.screenPosW;
+    mFinalCoord += 0.08 * globals.gRefractionValue;
+    #if defined(FLIP_TEXCOORD_Y)
+        mFinalCoord.y = 1 - mFinalCoord.y;
+    #endif
+    return tex2D( refractionMap, mFinalCoord ).xyz;
+#endif
+    return float3(0,0,0);
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GLOSS_COLOR_FS">
+<![CDATA[
+#if defined( SPECULAR ) && defined( ALPHA_BLENDED )
+    #undef SPECULAR // Disable specular color
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined( ALPHA_BLENDED )
+    alpha = saturate(object.exhaustColor.a*globals.gAlphaValue);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_ALPHA_FS">
+<![CDATA[
+#if defined( ALPHA_BLENDED )
+    float refractionBlendingRatio = 0.25;
+    // Because the refraction does not contain other transparent objects,
+    // only use 25% of the refraction and do the rest of the translucency with alpha blending
+
+    // The final blending should be:
+    // (rgbOut)   +   (refraction*ratio + oldRgb*(1-ratio)) * (1-a)
+    // Reformulate to match the hardware blending (rgbOut'  +  oldRgb * (1-a'):
+    // rgbOut' = rgbOut + refraction*ratio*(1-a)
+    // a' = (1-ratio)*a + ratio
+
+    refractingLightingScale = (1-alpha)*refractionBlendingRatio * distanceBlendAlpha;
+    alpha = (1-refractionBlendingRatio)*alpha +refractionBlendingRatio;
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

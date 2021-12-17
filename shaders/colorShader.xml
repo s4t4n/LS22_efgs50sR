@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "mixAmount" target = "mixAmount" type = "float"  group="base" defaultValue = "1.0" minValue = "0.0" maxValue = "1.0"/>
+        <Parameter name = "color"     target = "col0"      type = "float3" group="base" defaultValue = "0.5 0.5 0.5" minValue = "0.0 0.0 0.0" maxValue = "1.0 1.0 1.0"/>              
+    </Parameters>
+    <UvUsages>
+        <UvUsage textureName="mGradientMap" uvType="custom"/>
+    </UvUsages>
+    <Textures>
+        <Texture name = "mGradientMap"   defaultColorProfile = "sRGB"        group="color" defaultFilename = "../maps/textures/shared/defaultGradient_diffuse.png"/>
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="color" group="vtxColor"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name="VERTEX_COLOR" groups="vtxColor">
+<![CDATA[
+    #define VERTEX_COLOR
+]]>
+        </Variation>
+            <Variation name = "COLOR_MASK" groups="base color">
+<![CDATA[
+    // if uv.x<0 load gradientMap from baseMap
+    #define COLOR_MASK
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+    float mixAmount;
+    float3 color;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+#if defined( COLOR_MASK )
+    sampler2D mGradientMap;
+#endif
+]]>
+
+            </CodeInjection>                 
+            <CodeInjection position = "POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined(ALBEDO_MAP)
+    if ( ALBEDO_MAP_TEXCOORDS.x < 0.0 ){ 
+        diffuseColor.rgb = lerp( diffuseColor.rgb, object.color.rgb, object.mixAmount );
+    }
+#endif
+#if  defined( COLOR_MASK )
+    float y = 0.5;
+    float x = diffuseColor.r * 0.5 + 0.25; // Lookup from middle of left pixel to middle of right pixel
+    diffuseColor = tex2D( mGradientMap, float2(x,y) ).xyz;
+#endif
+#if defined(VERTEX_COLOR)
+    diffuseColor.rgb *= In.vs.vertexColor.rgb;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_GLOSS_COLOR_FS">
+<![CDATA[
+#if defined( SPECULAR ) && defined( GLOSS_MAP ) && defined( VERTEX_COLOR )
+    float3 mSpecular  = tex2D(glossMap, GLOSS_MAP_TEXCOORDS);
+    roughness = saturate(1.0 - (mSpecular.r *  In.vs.vertexColor.r));
+    bakedAO   = mSpecular.g * In.vs.vertexColor.r;
+    metalness = mSpecular.b;
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

@@ -1,0 +1,317 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "uvScale"    target = "uvScale"    type = "float4" group="base"       defaultValue = "0.5 0.5 0.5 0.5"/>
+        <Parameter name = "alphaShift" target = "alphaShift" type = "float"  group="alphaNoise" defaultValue = "0.1" minValue = "0.01" maxValue = "0.99"/>
+        <Parameter name = "snowScale"  target = "snowScale"  type = "float"  group="base"       defaultValue = "0.6" minValue = "0.0"  maxValue = "1.0"/>
+    </Parameters>
+    <UvUsages>
+        <UvUsage textureName="baseMap"   uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="normalMap" uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="glossMap"  uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="alphaMap"  uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="mBlendedDiffuse"  uvType="worldspace"/>
+        <UvUsage textureName="mBlendedNormal"   uvType="worldspace"/>
+        <UvUsage textureName="mBlendedSpecular" uvType="worldspace"/>
+        <UvUsage textureName="mBlendedAlpha"    uvType="worldspace"/>
+        <UvUsage textureName="mSnowSpecular"    uvType="worldspace"/>
+    </UvUsages>
+    <Textures>
+        <Texture name = "mBlendedDiffuse"  group="base"       defaultColorProfile = "sRGB"      defaultFilename = "$data/shared/default_diffuse.png"/>
+        <Texture name = "mBlendedNormal"   group="base"       defaultColorProfile = "linearRGB" defaultFilename = "$data/shared/default_normal.png"/>
+        <Texture name = "mBlendedSpecular" group="base"       defaultColorProfile = "linearRGB" defaultFilename = "$data/shared/default_specular.png"/>
+        <Texture name = "mBlendedAlpha"    group="alphaNoise" defaultColorProfile = "linearRGB" defaultFilename = "$data/shared/blendingNoise.png"/>
+        <Texture name = "mSnowSpecular"    group="base"       defaultColorProfile = "linearRGB" defaultFilename = "$data/maps/textures/shared/snow_specular.png"/>
+        <Texture name = "alphaMap"         group="alphaMap"   defaultColorProfile = "linearRGB" defaultFilename = "$data/shared/default_alpha.png"/>
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="color" group="base"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name = "alphaMap" groups="base alphaMap">
+<![CDATA[
+    // alpha is loaded from alphaMap
+    #define ALPHA_MAP
+]]>
+        </Variation>
+        <Variation name = "alphaNoise" groups="base alphaNoise">
+<![CDATA[
+/*
+    noise texture remapped by vertex.a using smoothstep
+*/
+    #define ALPHA_GRADIENT
+    #define ALPHA_TESTED
+]]>
+        </Variation>
+        <Variation name = "terrainFormat" groups="base">
+<![CDATA[
+/*
+    for mBlended
+    
+    mBlendedNormal.r - normal.r
+    mBlendedNormal.g - normal.g
+    mBlendedNormal.b - smoothness 
+    mBlendedNormal.a - parallax height (0 = down, 0.5 = mid, 1 = up) // not used 
+    
+    smoothness - loaded from mBlendedNormal.r
+*/
+    #define NORMAL_TERRAIN_FORMAT 
+]]>
+        </Variation>
+        <Variation name = "terrainFormat_alphaMap" groups="base alphaMap">
+<![CDATA[
+    #define NORMAL_TERRAIN_FORMAT
+    #define ALPHA_MAP
+]]>
+        </Variation>
+        <Variation name = "alphaNoise_terrainFormat" groups="base alphaNoise">
+<![CDATA[
+    #define NORMAL_TERRAIN_FORMAT
+    #define ALPHA_GRADIENT
+    #define ALPHA_TESTED
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="CONFIG_DEFINES">
+<![CDATA[
+#if defined(ALPHA_MAP) && !defined(ALPHA_BLENDED)
+    #define ALPHA_TESTED
+#endif
+#if defined(PARALLAX_MAP)
+    #if GPU_PROFILE < GPU_PROFILE_HIGH
+        #undef PARALLAX_MAPPING
+    #endif
+    // use simple version of parallax
+    #undef PARALLAX_OCCLUSION_MAPPING
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+/*
+    uvScale.xy - scaler multiplication on triplnar projected uv's
+*/
+    float4 uvScale;
+#if defined( ALPHA_GRADIENT )
+/*
+    alphaShift - offset in noise texture used with smoothstep, controlled via VertexColor.a
+*/
+    float alphaShift;
+#endif
+    float snowScale;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+/*
+    mBlendedDiffuse.rgb - diffuse color
+    mBlendedDiffuse.a   - blending mask (0..1 normalized)
+*/
+sampler2D mBlendedDiffuse;
+sampler2D mBlendedNormal;
+// snow textures
+sampler2D mSnowSpecular;
+#if !defined( NORMAL_TERRAIN_FORMAT )
+    sampler2D mBlendedSpecular;
+#endif
+#if defined( ALPHA_GRADIENT )
+    sampler2D mBlendedAlpha;
+#endif
+#if defined(ALPHA_MAP)
+    sampler2D alphaMap;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+    float2 texCoordsX : TEXCOORDn;
+    float2 texCoordsY : TEXCOORDn;
+    float2 texCoordsZ : TEXCOORDn;
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_END">
+<![CDATA[
+    float3 fullWorldPosition = worldPosition + float3(invViewMatrix[0][3], invViewMatrix[1][3], invViewMatrix[2][3]);
+    Out.texCoordsX = fullWorldPosition.yz;
+    Out.texCoordsY = fullWorldPosition.xz;
+    Out.texCoordsZ = fullWorldPosition.xy;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "LIB_FUNCTION_FS">
+<![CDATA[
+// 0..1 transitional gradient based on 3 inputs
+// mTexture    - cloud nosie style texture
+// mGradient   - input source gradient (smooth 0..1 transition)
+// mAlphaShift - gradient smoothness (0.1 - almost instant switch, 0.5 - smooth transition)
+float alphaGradient(float mTexture, float mGradient, float mAlphaShift){
+    return saturate( (-1 + mGradient + mTexture - mAlphaShift) / mAlphaShift);
+}
+// Season states:
+// cShared3 = 0 = summer
+// cShared3 = 1 = autumn
+// cShared3 = 2 = winter
+// cShared3 = 3 = spring
+// cShared3 = 4 = summer
+// cShared4 = 0 .. 1 = snow control
+float getSnowMask(ObjectParameters& object, float3 mNormal, float mBackfaceScale, float mAlpha, float mAlphaThreshold){
+    float snowLevel = min(cShared4, 1);
+    float mTransition = 1 - snowLevel*snowLevel; // pow(cShared4,2);
+    float NdotY = mNormal.y; // dot(mNormal, float3(0.0, 1.0, 0.0));
+    NdotY = max(NdotY * mBackfaceScale, NdotY * (1.0-mBackfaceScale)) + mBackfaceScale;
+    float mSnowMask = saturate(alphaGradient(mAlpha,NdotY,mAlphaThreshold)-mTransition);
+    return mSnowMask;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+    float  gSnowMask;
+    int    gIsSnowing;
+    float3 gSnowDiffuse;
+    float3 gSnowSpecular;
+    float  gSnowMaskGradient;
+/*
+globals.gVertexColor.r - opacity  for mBlendedDiffuse [ 0 - mBlendedDiffuse  not visible, 1 - fully visible ]
+globals.gVertexColor.g - softness for mBlendedDiffuse [ 0 - sharp transition, 1 - soft transition ]
+globals.gVertexColor.b - snow visibility [ 0 - no snow, 1 - with snow ]
+globals.gVertexColor.a - gradient multiplied with noise, used in ALPHA_GRADIENT 
+*/
+    float4 gVertexColor;
+    float  gBlendingMask;
+    float4 gBlendedDiffuse;
+    float4 gBlendedNormal;
+    float4 gBlendedSpecular;
+    float2 gUVs;
+#if defined( ALPHA_GRADIENT )
+    float  gBlendingAlpha;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "START_FS">
+<![CDATA[
+    globals.gVertexColor     = In.vs.vertexColor.rgba;
+    globals.gUVs = ALBEDO_MAP_TEXCOORDS;
+    {
+        float3 mAbsNormal = abs(In.vs.worldNormal);
+        mAbsNormal /= (mAbsNormal.x + mAbsNormal.y + mAbsNormal.z);
+        float2 uvs = mAbsNormal.x > mAbsNormal.y ? (mAbsNormal.x > mAbsNormal.z ? In.vs.texCoordsX : In.vs.texCoordsZ) : (mAbsNormal.y > mAbsNormal.z ? In.vs.texCoordsY : In.vs.texCoordsZ); 
+        // use ganarted uv's for blended diffuse/normal/specular
+        globals.gUVs = uvs;
+        // use hardcoded snow color, no texture 
+        globals.gSnowDiffuse  = float3(0.7300,0.7668,0.8356);
+        // snow texture is 1024x1024 so we need to scale uv's
+        globals.gSnowSpecular = tex2D( mSnowSpecular, 0.5*uvs ).rgb;
+        globals.gSnowMaskGradient = tex2D( mSnowSpecular, 0.1*uvs ).a;
+        globals.gSnowMaskGradient = lerp(globals.gSnowMaskGradient,1.0,globals.gVertexColor.b) - (1-object.snowScale);
+        globals.gSnowMask  = 0.0;
+        globals.gIsSnowing = cShared4 > 0.0 && object.snowScale > 0.0;
+    }
+    globals.gUVs *= object.uvScale.xy;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "PARALLAX_MAPPING_FS">
+<![CDATA[
+#if defined(PARALLAX_MAPPING)
+    globals.gUVs += tangentSpaceViewDir.xy * (parallaxHeight *  object.cParallaxValue*2 - object.cParallaxValue);
+    globals.gUVs *= object.uvScale.xy;
+#endif
+{
+    // in case we have parallax enabled, we need modify the uv's
+    // before we sample the textures 
+    globals.gBlendedDiffuse  = tex2D( mBlendedDiffuse ,  globals.gUVs ).rgba;
+    globals.gBlendedNormal   = tex2D( mBlendedNormal ,   globals.gUVs ).rgba;
+    #if !defined( NORMAL_TERRAIN_FORMAT )
+        globals.gBlendedSpecular = tex2D( mBlendedSpecular , globals.gUVs ).rgba;
+    #endif
+    globals.gBlendingMask  = saturate( ( 1.01*globals.gVertexColor.r - globals.gBlendedDiffuse.a ) / ( 0.01 + globals.gVertexColor.g ) );
+    #if defined( ALPHA_GRADIENT )
+        globals.gBlendingAlpha = tex2D( mBlendedAlpha ,  globals.gUVs ).r;
+    #endif
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_UNNORMALIZED_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+ #if defined( NORMAL_MAP ) //&& !defined(PARALLAX_MAP)
+    float3 mNormal   = tex2D( normalMap, NORMAL_MAP_TEXCOORDS).xyz - 0.5;
+    float3 mBlendNormal  = globals.gBlendedNormal.rgba  - 0.5;
+    #if defined( NORMAL_TERRAIN_FORMAT )
+        mBlendNormal.xy = globals.gBlendedNormal.xy;
+        mBlendNormal.z = sqrt(1.0 - dot(mBlendNormal.xy, mBlendNormal.xy));
+        mBlendNormal.xyz -= 0.5;
+    #endif
+    mNormal = lerp( mNormal.xyz, mNormal.xyz + mBlendNormal.xyz,  globals.gBlendingMask );
+    return mNormal;
+ #endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+#if defined( NORMAL_MAP )
+    return normalize(getUnnormalizedTangentSpaceNormal(In, globals, object));
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined(ALBEDO_MAP)
+    diffuseColor.rgb = lerp( diffuseColor.rgb, globals.gBlendedDiffuse.rgb,  globals.gBlendingMask );
+#endif
+    { // Snow mixing code 
+        if (globals.gIsSnowing){
+            // pixelShader normal computed before this point, right after PARALLAX_MAPPING_FS
+            // globals.gSnowSpecular.g - ambient occlusion used as alpha (should be less than 1.0)
+            globals.gSnowMask = getSnowMask(object,normal,0.25,globals.gSnowMaskGradient*globals.gSnowSpecular.g,0.25);
+            diffuseColor.rgb = lerp( diffuseColor.rgb, globals.gSnowDiffuse.rgb, globals.gSnowMask );
+        }
+    }
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_GLOSS_COLOR_FS">
+<![CDATA[
+#if defined( SPECULAR ) && defined( GLOSS_MAP )
+    float3 mSpecular  = tex2D(glossMap, GLOSS_MAP_TEXCOORDS);
+    #if defined( NORMAL_TERRAIN_FORMAT )
+        float3 mSpecularBlended = float3(globals.gBlendedNormal.b,1.0,0.0);
+        mSpecular = lerp( mSpecular.rgb, mSpecularBlended, globals.gBlendingMask );
+    #else
+        mSpecular = lerp( mSpecular.rgb, globals.gBlendedSpecular.rgb, globals.gBlendingMask );
+    #endif
+    roughness = 1.0 - mSpecular.r;
+    bakedAO   = mSpecular.g;
+    metalness = mSpecular.b;
+#endif
+    { // Snow mixing code 
+        if (globals.gIsSnowing){
+            float3 mPbrMapValues = lerp( float3(1-roughness,bakedAO,metalness), globals.gSnowSpecular, globals.gSnowMask );
+            roughness = 1-mPbrMapValues.x;
+            bakedAO   = mPbrMapValues.y;
+            metalness = mPbrMapValues.z;
+        }
+    } 
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined(ALPHA_MAP)
+    // load alpha from separate texture
+    alpha = tex2D(alphaMap, ALBEDO_MAP_TEXCOORDS).r;
+#endif
+#if defined( ALPHA_GRADIENT )
+    alpha *= saturate((-1+globals.gVertexColor.a + globals.gBlendingAlpha+object.alphaShift) / object.alphaShift); 
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="FINAL_POS_FS">
+<![CDATA[
+#if defined( DEBUG_SHOW_PARALLAX )
+    oColor.rgb = globals.gBlendingMask;
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

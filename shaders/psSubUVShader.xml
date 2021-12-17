@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="colorAlpha" target="colorAlpha" type="float4" group="base"     defaultValue = "1.0 1.0 1.0 1.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name="playScale"  target="playScale"  type="float4" group="subuv"    defaultValue = "30 60 1 0"/>
+        <Parameter name="fillTypeId" target="fillTypeId" type="float"  group="fillType" defaultValue = "0"/>
+    </Parameters>
+    <UvUsages/>
+    <Textures>
+        <Texture name = "fillTypeColorMap" group="fillType" defaultColorProfile = "sRGB"      type="2dArray" />
+        <Texture name = "lightMap"         group="lightmap" defaultColorProfile = "linearRGB" />
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="uv1" group="uv1"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name = "lightmap" groups="base lightmap">
+<![CDATA[
+    /*
+    LIGHTMAP - fake light made out of pre-rendered shaded parts of the particle 
+               requeres extra texture == lightMap
+               lightMap.rg - right/left
+               lightMap.ba - top/bottom
+               baseMap.r   - albedo
+               baseMap.gb  - front/back
+               baseMap.a   - alpha
+    */
+    #define LIGHTMAP
+]]>
+        </Variation>
+        <Variation name = "subUV" groups="base subuv uv1">
+<![CDATA[
+    /*
+    SUBUV_MOVIE - plays atlas animation with speed set in range [ playScale.x, playScale.y ],
+                  random selected start position,
+                  plays over whole atlas.
+    */
+    #define SUBUV_MOVIE
+]]>
+        </Variation>
+        <Variation name = "subUV_lightmap" groups="base subuv lightmap uv1">
+<![CDATA[
+    #define SUBUV_MOVIE
+    #define LIGHTMAP
+]]>
+        </Variation>
+        <Variation name = "subUV_fillTypeArray" groups="base subuv uv1 fillType">
+<![CDATA[
+    #define SUBUV_MOVIE
+    #define FILLTYPE_ARRAY
+]]>
+        </Variation>
+        <Variation name = "subUVHorizontal" groups="base subuv uv1">
+<![CDATA[
+    /*
+    SUBUV_MOVIE_HORIZONTAL - plays atlas animation with speed set in range [ playScale.x, playScale.y ],
+                             random selected start position,
+                             plays over random selected horizontal line.
+    */
+    #define SUBUV_MOVIE_HORIZONTAL
+]]>
+        </Variation>
+        <Variation name = "subUVByLife" groups="base subuv uv1">
+<![CDATA[
+    /*
+    SUBUV_BY_LIFE - plays atlas animation during lifetime of the particle,
+                    start position at top left corner, end position at bottom right corner.
+                    plays over whole atlas.
+    */
+    #define SUBUV_BY_LIFE
+    #define SUBUV_MOVIE
+]]>
+        </Variation>
+        <Variation name = "subUVByLifeVelocityAligned" groups="base subuv uv1">
+<![CDATA[
+    #define SUBUV_BY_LIFE
+    #define SUBUV_MOVIE
+    #define VELOCITY_ALIGNED
+]]>
+        </Variation>
+        <Variation name = "subUVHorizontalByLife" groups="base subuv uv1">
+<![CDATA[
+    #define SUBUV_BY_LIFE
+    #define SUBUV_MOVIE_HORIZONTAL
+]]>
+        </Variation>
+        <Variation name = "subUVHorizontalByLifeVelocityAligned" groups="base subuv uv1">
+<![CDATA[
+    #define VELOCITY_ALIGNED
+    #define SUBUV_MOVIE_HORIZONTAL
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position = "CONFIG_DEFINES">
+<![CDATA[
+/*
+    This shader meant to be used with particle systems only
+*/
+#define PARTICLE_SYSTEM
+#if defined( VELOCITY_ALIGNED )
+    #define PARTICLE_SYSTEM_VELOCITY_ALIGNED
+#endif
+#if defined( DISABLE_BILLBOARD )
+    #undef PARTICLE_SYSTEM_BILLBOARD
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+#if defined( SUBUV_MOVIE_HORIZONTAL ) || defined( SUBUV_MOVIE )
+    /*
+    [ playScale.x, playScale.y ] - animation playSpeed Range
+    playScale.z                    - enables UV_FLIPPING
+                    1 - use flipping, 0 - without flipping.
+    */
+    float4 playScale;
+#endif
+    float4 colorAlpha;
+#if defined(FILLTYPE_ARRAY)
+    float  fillTypeId;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="LIB_FUNCTION_FS">
+<![CDATA[
+float getDepthFade(FS_INPUT In, FS_GLOBALS globals, ObjectParameters& object, float fadeDistance)
+{
+    float screenDepth = In.vs.screenPosZ / In.vs.screenPosW;
+    float screenDepthLinear = convertDepthToEyeZ(screenDepth);
+    float sceneDepthLinear = getLinearSceneDepth(In, globals,object);
+    return saturate((sceneDepthLinear - screenDepthLinear)/fadeDistance);
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+#if defined(LIGHTMAP)
+    float4   gLightMap1;
+    float4   gLightMap2;
+    float3x3 gWorldToTangentSpaceMat;
+    float    gAlpha;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+#if defined(FILLTYPE_ARRAY)
+    sampler2DArray fillTypeColorMap;
+#endif
+#if defined(LIGHTMAP)
+    sampler2D lightMap;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+#if defined(FILLTYPE_ARRAY)
+    float2 fillTypeTexCoords : TEXCOORDn;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+#if defined(FILLTYPE_ARRAY)
+    Out.fillTypeTexCoords = convertDefaultTexCoords( In, object, In.texCoords0.xy );
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_DEFAULT_TEXCOORDS_VS">
+<![CDATA[
+#if defined( SUBUV_MOVIE_HORIZONTAL ) || defined( SUBUV_MOVIE )
+    // In.color.w;   blendFactor="1" blendInFactor="0" blendOutFactor="0" => 0 .. 1
+    float  mAlphaOverLife   = In.texCoords1.x;  // iterated value by lifetime of the particle from 0 .. 1
+    float  mRandomValue     = In.texCoords1.y;  // random per particle value from 0 .. 1
+    float  mXsize           = 1 / object.particleInvTextureAtlasSize.x;
+    float  mYsize           = 1 / object.particleInvTextureAtlasSize.y;
+    float  mXYsize          = mXsize * mYsize;
+    
+    float  mTime            = cTime_s * lerp( object.playScale.x, object.playScale.y, mRandomValue );
+    #if defined( SUBUV_BY_LIFE )
+        mTime = mAlphaOverLife * mXYsize;
+    #endif
+    float2 mIncomingUV      = convertDefaultTexCoords( In, object, In.texCoords0.xy );
+    float2 mOutgoingUV      = mIncomingUV;
+
+    // UV_FLIPPING
+    float mUVflipping       = object.playScale.z; 
+#if defined(LIGHTMAP)
+    mUVflipping = 0; // todo: uv flip support for LIGHTMAP
+#endif
+    float mRandomSwitch1    = mUVflipping * ceil( mRandomValue - 0.5 );  //  0 or 1
+    float mRandomSwitch2    = 2 * mRandomSwitch1 - 1;                    // -1 or 1
+    mIncomingUV.x = mRandomSwitch1 - mRandomSwitch2*mIncomingUV.x;
+    //  end
+    #if defined( SUBUV_MOVIE_HORIZONTAL )
+        float mSUBuvHorTime = mTime + mRandomValue * mXsize;
+        float mFrame        = floor ( fmod( mSUBuvHorTime,  mXsize ) );
+        float mYpos         = floor ( mRandomValue * mYsize );
+        float2 mSlotPos     = float2( mFrame, mYpos );
+        mOutgoingUV         = ( mSlotPos + mIncomingUV ) / float2( mXsize, mYsize );
+    #endif
+    #if defined( SUBUV_MOVIE )
+        float mSUBuvTime    = mTime + mRandomValue * mXYsize;
+        float mFrame        = floor ( fmod( mSUBuvTime, mXYsize ) );
+        #if defined( SUBUV_BY_LIFE )
+            mSUBuvTime      = mTime;
+            mFrame = floor(mSUBuvTime);
+        #endif
+        float mYpos         = floor ( mFrame / mXsize );
+        float2 mSlotPos     = float2( mFrame - mYpos * mXsize, - mYpos - 1 );
+        mOutgoingUV         = ( mSlotPos + mIncomingUV ) * object.particleInvTextureAtlasSize.xy;
+    #endif
+    return mOutgoingUV;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SHARED_VARIABLES_FS">
+<![CDATA[
+#if defined(LIGHTMAP)
+/*
+    lightMap.rg - right/left
+    lightMap.ba - top/bottom
+    baseMap.r   - emissive/albedo
+    baseMap.gb  - front/back
+    baseMap.a   - alpha
+*/
+    globals.gLightMap1  = tex2D(lightMap, In.vs.defaultTexCoords).rgba;
+    globals.gLightMap2  = tex2D(baseMap,  In.vs.defaultTexCoords).rgba;
+    globals.gWorldToTangentSpaceMat = worldToTangentSpaceMat;
+    // alpha erosion 
+    // In.vs.vertexColor.w - contain (object.particleBlendFactor * blendFactor) caluclated in vertexShader 
+    globals.gAlpha = object.colorAlpha.a*saturate(globals.gLightMap2.a -1+In.vs.vertexColor.w);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+
+#if defined(FILLTYPE_ARRAY)
+    float3 blurredDiffuse = float3(1.0,1.0,1.0);
+    if ( (1.0 > object.colorAlpha.r) || (1.0 > object.colorAlpha.g) || (1.0 > object.colorAlpha.b) ){
+        blurredDiffuse = object.colorAlpha.rgb;
+    } else{
+        float  numMips        = (float)tex2DGetNumMipLevels(fillTypeColorMap);
+        blurredDiffuse = tex2Dlod( fillTypeColorMap, float3(In.vs.fillTypeTexCoords,object.fillTypeId), numMips-1 ).rgba;
+    }
+    diffuseColor *= blurredDiffuse;
+#elif defined(LIGHTMAP)
+    diffuseColor = globals.gLightMap2.r*object.colorAlpha.rgb;
+#else
+    diffuseColor *= object.colorAlpha.rgb;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined(ALPHA_BLENDED)
+    alpha *= object.colorAlpha.a;
+#endif
+#if defined(LIGHTMAP)
+    alpha = globals.gAlpha;
+#endif
+#if defined(PARTICLE_SYSTEM_BILLBOARD) && defined(ALPHA_BLENDED)
+    #if GPU_PROFILE >= GPU_PROFILE_HIGH
+        alpha *= getDepthFade(In, globals, object, 0.5);
+    #endif
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_LIGHTING_FS">
+<![CDATA[
+#if defined(LIGHTMAP)
+{
+    float3 tangentSpaceLightDir = normalize(mul(globals.gWorldToTangentSpaceMat, lightDir.xyz)).xyz;
+    float horizontal = (tangentSpaceLightDir.x > 0.0) ? (globals.gLightMap1.r) : (globals.gLightMap1.g);
+    float vertical   = (tangentSpaceLightDir.y > 0.0) ? (globals.gLightMap1.b) : (globals.gLightMap1.a);
+    float frontal    = (tangentSpaceLightDir.z > 0.0) ? (globals.gLightMap2.g) : (globals.gLightMap2.b);
+    float customShading = horizontal*tangentSpaceLightDir.x*tangentSpaceLightDir.x + 
+                            vertical*tangentSpaceLightDir.y*tangentSpaceLightDir.y + 
+                             frontal*tangentSpaceLightDir.z*tangentSpaceLightDir.z;
+    lighting = (atten) * customShading * lightColor * diffuseColor * globals.gAlpha;
+}
+#else
+    float NdotLNegative = dot(normal, lightDir);
+    if (NdotLNegative < 0) {
+        NdotLNegative = -NdotLNegative*0.25;
+    }
+    NdotLNegative = min(NdotLNegative, 1);
+    NdotL = saturate(dot(normal, lightDir));
+    lighting = ((atten*NdotLNegative) * diffuseShading + (atten*NdotL)* specularShading )* lightColor;
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

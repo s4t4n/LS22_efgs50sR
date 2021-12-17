@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <UvUsages/>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="GET_NORMAL_VS">
+<![CDATA[
+                return In.normal.xyz * 2 - 1;
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_LIGHTING_FS">
+<![CDATA[
+                normal = lightDir * 0.5f;   // force NdotL = 0.5 regardless of normal
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "UVScaleSpeed" target = "UVScaleSpeed" type = "float4"  defaultValue = "1.0 2.0 0.005 -0.001" minValue = "-10.0 -10.0 -10.0 -10.0"  maxValue = "10.0 10.0 10.0 10.0"/>
+        <Parameter name = "colorScale"   target = "colorScale"   type = "float4"  defaultValue = "1.0 1.0 1.0 1.0"      minValue = "0.0 0.0 0.0 0.0"          maxValue = "1.0 1.0 1.0 1.0"/>
+    </Parameters>
+    <UvUsages/>
+    <Textures>
+        <Texture name = "mistNmap" defaultColorProfile = "linearRGB" defaultFilename = "../shared/mist_diffuse.png"/>
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="uv1" group="uv1"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name = "TOP_DOWN" groups="base uv1">
+<![CDATA[
+    #define TOP_DOWN
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0" alphaForceMode = "use">
+        <CodeInjections>
+            <CodeInjection position="CONFIG_DEFINES">
+<![CDATA[
+#if defined(ALPHA_BLENDED)
+    // In additive blending mode, we only apply the fog extinction
+    #undef FOG_INSCATTERING
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+sampler2D mistNmap;
+]]>
+            </CodeInjection>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+    float4 UVScaleSpeed;
+    float4 colorScale;
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+#if defined( TOP_DOWN )
+    float2 albedoMapTexCoords2 : TEXCOORDn;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+#if defined( TOP_DOWN )
+    // Pass second UVSet to the Pixel Shader
+    Out.albedoMapTexCoords2 = convertDefaultTexCoords( In, object, In.texCoords1.xy );
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GLOSS_COLOR_FS">
+<![CDATA[
+// Disable specular color for alphablended billboards
+#if defined(SPECULAR) && defined(ALPHA_BLENDED)
+    #undef SPECULAR
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="EMISSIVE_FS">
+<![CDATA[
+#if defined( EMISSIVE_MAP )
+    emissiveColor.rgb *= object.colorScale.rgb;
+#endif
+]]>
+            </CodeInjection> 
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+    float  mMist = 1.0;
+    float  mPixelDepth = 1.0;
+    float2 mSpeed   = object.UVScaleSpeed.zw * cTime_s;
+    float2 mUVscale = object.UVScaleSpeed.xy ;
+    float4 mA = tex2D( mistNmap, mUVscale * ( ALBEDO_MAP_TEXCOORDS + mSpeed ) ).rgba;
+    // ------------------------------------------------
+    mMist = mA.g * mA.b + mA.r;
+    // ------------------------------------------------
+    float mFacing       = max(dot(viewDir, normal),0 );
+    float mGradient     = ALBEDO_MAP_TEXCOORDS.y;
+    float mFinalAlpha   = 1.0;
+    
+    #if defined( TOP_DOWN )
+        float mSphere   = 1 - length( ALBEDO_MAP_TEXCOORDS.xy - float2(0.5, 0.5)) * 1.41421356237;
+        mSphere         = pow( mSphere, 4 );
+        mFinalAlpha     = mSphere;
+        // --------------------------------------------
+        mGradient       = In.vs.albedoMapTexCoords2.y;
+    #endif
+    mFacing     = pow( mFacing,   5);
+    mGradient   = pow( mGradient, 5);
+    mPixelDepth = 1 - 0.01*In.vs.vertToEyeVectorProjDistance;
+    // ------------------------------------------------
+    mFinalAlpha *= mPixelDepth * mMist * mFacing * mGradient * object.colorScale.a;
+    // ------------------------------------------------
+    alpha = saturate(mFinalAlpha);
+]]>
+            </CodeInjection>
+            <CodeInjection position="FINAL_POS_FS">
+<![CDATA[
+#if defined(ALPHA_BLENDED)
+    oColor.a = 0.0; // additive blending
+    #if defined( DEBUG_SHOW_PARALLAX )
+        oColor.rgb = mFinalAlpha;
+        oColor.a = 1.0f;
+    #endif
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

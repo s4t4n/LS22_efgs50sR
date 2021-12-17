@@ -1,0 +1,147 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="displacementSpeedFrequency" target="displacementSpeedFrequency" group="base"   type="float4" defaultValue = "0.05 -8 -5 4"  minValue = "-1.0 -10 -10 -10" maxValue = "1.0 10 10 10"/>
+        <Parameter name="yOffsetScale"               target="yOffsetScale"               group="rotate" type="float"  defaultValue = "0.5"  minValue = "-5" maxValue = "5"/>
+    </Parameters>
+    <UvUsages/>
+    <VertexAttributes>
+        <VertexAttribute name="uv1" group="base"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name = "rotateToWind" groups="base rotate">
+<![CDATA[
+    #define ROTATE_TO_WIND
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+          <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+float4 displacementSpeedFrequency;
+float yOffsetScale;
+]]>
+          </CodeInjection>
+            <CodeInjection position="LIB_FUNCTION_VS">
+<![CDATA[
+// Custom vertex functions
+float3x3 invMatrix(float3x3 m){
+    // computes the inverse of a matrix m
+    float m_det = m[0][0] * ( m[1][1] * m[2][2] - m[2][1] * m[1][2] ) -
+                  m[0][1] * ( m[1][0] * m[2][2] - m[1][2] * m[2][0] ) +
+                  m[0][2] * ( m[1][0] * m[2][1] - m[1][1] * m[2][0] );
+    float m_invdet = 1 / m_det;
+    float3x3 m_inv;
+    m_inv[0][0] = ( m[1][1] * m[2][2] - m[2][1] * m[1][2] ) * m_invdet;
+    m_inv[0][1] = ( m[0][2] * m[2][1] - m[0][1] * m[2][2] ) * m_invdet;
+    m_inv[0][2] = ( m[0][1] * m[1][2] - m[0][2] * m[1][1] ) * m_invdet;
+    m_inv[1][0] = ( m[1][2] * m[2][0] - m[1][0] * m[2][2] ) * m_invdet;
+    m_inv[1][1] = ( m[0][0] * m[2][2] - m[0][2] * m[2][0] ) * m_invdet;
+    m_inv[1][2] = ( m[1][0] * m[0][2] - m[0][0] * m[1][2] ) * m_invdet;
+    m_inv[2][0] = ( m[1][0] * m[2][1] - m[2][0] * m[1][1] ) * m_invdet;
+    m_inv[2][1] = ( m[2][0] * m[0][1] - m[0][0] * m[2][1] ) * m_invdet;
+    m_inv[2][2] = ( m[0][0] * m[1][1] - m[1][0] * m[0][1] ) * m_invdet;
+    return m_inv;
+}
+float3 rotateVector(float3 inputVector, float rotation){
+    float sinRot, cosRot;
+    sincos(rotation, sinRot, cosRot);
+    return float3(inputVector.x * cosRot + inputVector.z * sinRot, inputVector.y, inputVector.z * cosRot - inputVector.x * sinRot);
+}
+float3 rotateToWind(float3 inputVector, ObjectParameters& object){
+    float3 mDeformed = inputVector.xyz;
+    float3x3 invModelMatrix = invMatrix(object.modelMatrix);
+    // negate transforms
+    mDeformed = mul(invModelMatrix,mDeformed);
+    // rotate toward the wind
+    float3 windDirection = normalize(float3(cShared1, 0, cShared2));
+    if ( 0== cShared1 && 0 == cShared2 ){
+        windDirection = float3(1,0,0);
+    }
+    float m_rot = atan2(windDirection.x,windDirection.z);
+    mDeformed = rotateVector(mDeformed,m_rot);
+    // ------------------------------------
+    return mDeformed;
+}
+float3 getCustomPositionVS( VS_INPUT    In,
+                      ObjectParameters& object,
+                                float   mTime ){
+    // =================================
+    // wind animation 
+    float4 mDispSpeedFreq = object.displacementSpeedFrequency;
+    float2 maskMapTexCoords;
+    float2 amount;
+    float offset, offset1, offset2;
+    float3 mOffset;
+    maskMapTexCoords = convertDefaultTexCoords(In, object, In.texCoords1.xy);
+    float3 flagPos = float3(object.modelMatrix[0][3] + invViewMatrix[0][3],
+                            object.modelMatrix[1][3] + invViewMatrix[1][3],
+                            object.modelMatrix[2][3] + invViewMatrix[2][3]);
+    float flagVarSeed = flagPos.x + flagPos.y + flagPos.z;
+    amount.xy = maskMapTexCoords.xy;
+    float mSpeed1 = mDispSpeedFreq.y;
+    float mSpeed2 = 2.0*mSpeed1;
+    float2 mFreq = float2(In.position.y,In.position.z)*mDispSpeedFreq.zw;
+    offset1 = sin( (mTime+flagVarSeed)*mSpeed1 + mFreq.x+mFreq.y)*amount.x*amount.y;
+    offset2 = sin( (mTime+flagVarSeed)*mSpeed2 + mFreq.x+mFreq.y)*amount.x*amount.y;
+    float windStrength = (cShared0);
+    offset  = lerp(offset1,offset2,windStrength);
+    mOffset = float3(mDispSpeedFreq.x*offset,mDispSpeedFreq.x*offset*0.5,0.0);
+#if defined(ROTATE_TO_WIND)
+    float mYOffset = lerp(object.yOffsetScale*amount.x,0,windStrength);
+    mOffset.y -= mYOffset;
+#endif
+    float3 mDeformedPos = In.position.xyz + mOffset;
+#if defined(ROTATE_TO_WIND)
+    mDeformedPos = rotateToWind(mDeformedPos,object);
+#endif
+    return mDeformedPos;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_POSITION_VS">
+<![CDATA[
+    return getCustomPositionVS(In, object, cTime_s);
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_PREV_POSITION_VS">
+<![CDATA[
+    return getCustomPositionVS(In, object, cPrevTime_s);
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_WORLD_POSE_VS">
+<![CDATA[
+    prevWorldPosition = mul(object.prevModelMatrix, float4(prevPosition, 1));
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_NORMAL_VS">
+<![CDATA[
+#if defined(ROTATE_TO_WIND)
+    float3 mDeformedNormal = In.normal.xyz;
+    mDeformedNormal = rotateToWind(mDeformedNormal,object);
+    return mDeformedNormal;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_TANGENT_VS">
+<![CDATA[
+#if defined(ROTATE_TO_WIND)
+    float3 mDeformedTangent = In.tangent.xyz;
+    mDeformedTangent = rotateToWind(mDeformedTangent,object);
+    return mDeformedTangent;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_BITANGENT_VS">
+<![CDATA[
+#if defined(ROTATE_TO_WIND)
+    float3 mDeformedBitangent = cross(getNormal(In,object), getTangent(In,object))*In.tangent.w;
+    return mDeformedBitangent;
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

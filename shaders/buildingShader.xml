@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="dirtMossSmoothness"     target="dirtMossSmoothness"     type="float2" group="base" defaultValue="0.12 0.12" minValue = "0.0 0.0" maxValue = "1.0 1.0"/>
+        <Parameter name="dirtMossMix"            target="dirtMossMix"            type="float2" group="base" defaultValue="1.0 1.0" minValue = "0.0 0.0" maxValue = "1.0 1.0"/>
+        <Parameter name="placeableColorScale"    target="placeableColorScale"    type="float4" group="base" defaultValue="0.0 1.0 0.0 0.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name="snowScale"              target="snowScale"              type="float"  group="base" defaultValue="1.0" minValue="0.0"  maxValue="1.0"/>
+        <Parameter name="visibilityCutThreshold" target="visibilityCutThreshold" type="float"  group="visibilityCut" defaultValue="0.0" minValue="0.0"  maxValue="1.0"/>
+        <Parameter name="colorScale"             target="colorScale"             type="float4" group="colorScale" arraySize="8"  defaultValue="0.5 0.5 0.5 1.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 255.0">
+            <Default index="0">0.80 0.55 0.05 1.0</Default>
+            <Default index="1">1.00 0.10 0.10 1.0</Default>
+            <Default index="2">0.10 1.00 0.10 1.0</Default>
+            <Default index="3">0.10 0.10 1.00 1.0</Default>
+            <Default index="4">1.00 1.00 0.10 1.0</Default>
+            <Default index="5">0.05 0.05 0.05 1.0</Default>
+            <Default index="6">1.00 0.10 1.00 1.0</Default>
+            <Default index="7">0.10 1.00 1.00 1.0</Default>
+        </Parameter>
+    </Parameters>
+    <UvUsages>
+        <UvUsage textureName="baseMap"       uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="normalMap"     uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="glossMap"      uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="mMaskMap"      uvType="uv1" uvScale="1.0"/>
+        <UvUsage textureName="mDirtDiffuse"  uvType="worldspace"/>
+        <UvUsage textureName="mMossDiffuse"  uvType="worldspace"/>
+        <UvUsage textureName="mSnowSpecular" uvType="worldspace"/>
+        <UvUsage textureName="mParallaxMap"  uvType="uv0" uvScale="1.0"/>
+    </UvUsages>
+    <Textures>
+        <Texture name = "mMaskMap"      group="base"           defaultColorProfile = "linearRGB" defaultFilename = "$data/maps/textures/shared/default_specular.png"/>
+        <Texture name = "mDirtDiffuse"  group="base"           defaultColorProfile = "sRGB"      defaultFilename = "$data/maps/textures/shared/mapDirt_diffuse.png"/>
+        <Texture name = "mMossDiffuse"  group="base"           defaultColorProfile = "sRGB"      defaultFilename = "$data/maps/textures/shared/mapMoss_diffuse.png"/>
+        <Texture name = "mSnowSpecular" group="base"           defaultColorProfile = "linearRGB" defaultFilename = "$data/maps/textures/shared/snow_specular.png"/>
+        <Texture name = "mParallaxMap"  group="customParallax" defaultColorProfile = "linearRGB" defaultFilename = "$data/maps/textures/shared/default_height.png"/>
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="uv1" group="base"/>
+        <VertexAttribute name="uv2" group="visibilityCut"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name = "customParallax" groups="base customParallax">
+<![CDATA[
+    #define CUSTOM_PARALLAX
+]]>
+        </Variation>
+        <Variation name = "colorScale" groups="base colorScale">
+<![CDATA[
+    // if uv.x>0 use baseMap
+    // if uv.x<0 colorScale<index> is loaded with index=int(uv.y)
+    // vertical uv position defines different color values (array style)
+    // works only uv.y > 0 
+    #define COLOR_SCALE
+]]>
+        </Variation>
+        <Variation name = "colorScale_customParallax" groups="base colorScale customParallax">
+<![CDATA[
+    #define COLOR_SCALE
+    #define CUSTOM_PARALLAX
+]]>
+        </Variation>
+        <Variation name = "visibilityCut" groups="base visibilityCut">
+<![CDATA[
+    // enables alpha_test
+    // cut visibility of the mesh based on uv2.y and visibility parameter
+    #define VISIBILITY_CUT
+    #define ALPHA_TESTED
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="SHARED_START">
+<![CDATA[
+#if defined(CUSTOM_PARALLAX)
+    #define PARALLAX_MAP
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="CONFIG_DEFINES">
+<![CDATA[
+#if defined(PARALLAX_MAP)
+    #if GPU_PROFILE >= GPU_PROFILE_HIGH
+        #define PARALLAX_OCCLUSION_MAPPING
+    #endif
+    #define PARALLAX_MAPPING_NON_SQUARE_TEXTURE
+#endif
+#define PARALLAX_MAPPING_REFERENCE_PLANE 0.5
+]]>
+            </CodeInjection>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+float2 dirtMossSmoothness;
+float2 dirtMossMix;
+float4 placeableColorScale;
+float snowScale;
+#if defined( COLOR_SCALE )
+/*
+    colorScale<index>.rgb - diffuse color information
+    colorScale<index>.a   - not used 
+*/
+    float4 colorScale[16];
+#endif
+#if defined( VISIBILITY_CUT )
+    float visibilityCutThreshold;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+sampler2D mMaskMap;
+sampler2D mDirtDiffuse;
+sampler2D mMossDiffuse;
+// snow textures
+sampler2D mSnowSpecular;
+#if defined(CUSTOM_PARALLAX)
+    sampler2D mParallaxMap;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_BUMP_HEIGHT_AT_WITH_GRAD_FS">
+<![CDATA[
+#if defined(CUSTOM_PARALLAX)
+    return tex2Dgrad(mParallaxMap, float3(uv, layer), gradX, gradY).r;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_BUMP_HEIGHT_AT_FS">
+<![CDATA[
+#if defined(CUSTOM_PARALLAX)
+    return tex2D(mParallaxMap, float3(uv, layer)).r;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_BUMP_HEIGHT_TEXTURE_SIZE_FS">
+<![CDATA[
+#if defined(CUSTOM_PARALLAX)
+    return tex2DSize(mParallaxMap, 0);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "LIB_FUNCTION_FS">
+<![CDATA[
+float fitRangeFS(float mIn,float mOldMin,float mOldMax ,float mNewMin ,float mNewMax ){
+    return (mNewMin + (mIn - mOldMin) * (mNewMax  - mNewMin ) / (mOldMax  - mOldMin));
+}
+// 0..1 transitional gradient based on 3 inputs
+// mTexture    - cloud nosie style texture
+// mGradient   - input source gradient (smooth 0..1 transition)
+// mAlphaShift - gradient smoothness (0.1 - almost instant switch, 0.5 - smooth transition)
+float alphaGradient(float mTexture, float mGradient, float mAlphaShift){
+    return saturate( (-1 + mGradient + mTexture - mAlphaShift) / mAlphaShift);
+}
+// Season states:
+// cShared3 = 0 = summer
+// cShared3 = 1 = autumn
+// cShared3 = 2 = winter
+// cShared3 = 3 = spring
+// cShared3 = 4 = summer
+// cShared4 = 0 .. 1 = snow control
+float getSnowMask(ObjectParameters& object, float3 mNormal, float mBackfaceScale, float mAlpha, float mAlphaThreshold){
+    float snowLevel = min(cShared4, 1);
+    float mTransition = snowLevel*snowLevel*snowLevel; // pow(cShared4,3);
+    float NdotY = mNormal.y; // dot(mNormal, float3(0.0, 1.0, 0.0));
+    NdotY = max(NdotY * mBackfaceScale, NdotY * (1.0-mBackfaceScale)) + mBackfaceScale;
+    float mSnowMask = object.snowScale*mTransition*alphaGradient(mAlpha,NdotY,mAlphaThreshold);
+    return mSnowMask;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+    float  gSnowMask;
+    int    gIsSnowing;
+    float3 gSnowDiffuse;
+    float3 gSnowSpecular;
+    float  gAO;
+    float  gMossMask;
+    float  gDirtMask;
+    float4 gDirtDiffuse; // alpha channel must be with black-white gradients
+    float3 gDirtSpecular;
+    float4 gMossDiffuse; // alpha channel must be with black-white gradients
+    float3 gMossSpecular;
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+    float2 maskMapTexCoords : TEXCOORDn;
+    float2 texCoordsX       : TEXCOORDn;
+    float2 texCoordsY       : TEXCOORDn;
+    float2 texCoordsZ       : TEXCOORDn;
+    float3 localNormal      : TEXCOORDn;
+#if defined( VISIBILITY_CUT )
+    float2 visibilityTexCoords : TEXCOORDn;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+    Out.maskMapTexCoords = convertDefaultTexCoords(In, object, In.texCoords1.xy); // Pass second UVSet to the Pixel Shader
+    float3 localPosition = In.position.xyz;
+    Out.texCoordsY  = localPosition.zx;
+    Out.texCoordsZ  = localPosition.yx;
+    Out.texCoordsX  = localPosition.yz;
+    Out.localNormal = normalize(In.normal.xyz);
+#if defined( VISIBILITY_CUT )
+    Out.visibilityTexCoords = convertDefaultTexCoords(In, object, In.texCoords2.xy); // Pass third UVSet to the Pixel Shader
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "START_FS">
+<![CDATA[
+    {
+        float3 mAbsNormal   = abs(In.vs.localNormal);
+        mAbsNormal /= (mAbsNormal.x + mAbsNormal.y + mAbsNormal.z);
+        float2 uvs = mAbsNormal.x > mAbsNormal.y ? (mAbsNormal.x > mAbsNormal.z ? In.vs.texCoordsX : In.vs.texCoordsZ) : (mAbsNormal.y > mAbsNormal.z ? In.vs.texCoordsY : In.vs.texCoordsZ);
+        globals.gDirtDiffuse  = tex2D( mDirtDiffuse,  uvs ).rgba;
+        globals.gMossDiffuse  = tex2D( mMossDiffuse,  uvs ).rgba;
+        globals.gSnowDiffuse  = float3(0.7300,0.7668,0.8356);
+        // snow texture is 1024x1024 so we need to scale uv's
+        globals.gSnowSpecular = tex2D( mSnowSpecular, 0.5*uvs ).rgb;
+    }
+    float3 mMask  = tex2D( mMaskMap, In.vs.maskMapTexCoords ).rgb;
+    globals.gMossMask = mMask.r;
+    globals.gAO       = mMask.g;
+    globals.gDirtMask = mMask.b;
+    globals.gMossSpecular = float3(object.dirtMossSmoothness.y,1.0,0.0);
+    globals.gDirtSpecular = float3(object.dirtMossSmoothness.x,1.0,0.0);
+    globals.gSnowMask = 0.0;
+    globals.gIsSnowing = cShared4 > 0 && In.vs.maskMapTexCoords.x > 0.0 && object.snowScale > 0.0;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined(ALBEDO_MAP)
+    #if defined( COLOR_SCALE )
+        if ( ALBEDO_MAP_TEXCOORDS.x < 0.0 ){
+            float4 mColorScale = object.colorScale[int(ALBEDO_MAP_TEXCOORDS.y)];
+            diffuseColor = saturate(lerp(diffuseColor, diffuseColor.rgb * mColorScale.rgb, mColorScale.a));
+        }
+    #endif
+    // main diffuse mixinig
+    diffuseColor.rgb = lerp( diffuseColor.rgb, globals.gMossDiffuse.rgb, globals.gMossMask * object.dirtMossMix.x );
+    diffuseColor.rgb = lerp( diffuseColor.rgb, globals.gDirtDiffuse.rgb, globals.gDirtMask * object.dirtMossMix.y );
+#endif
+    { // Snow mixing code 
+        if (globals.gIsSnowing){
+            // pixelShader normal computed before this point, right after PARALLAX_MAPPING_FS
+            // globals.gSnowSpecular.g - ambient occlusion used as alpha (should be less than 1.0)
+            globals.gSnowMask = getSnowMask(object,normal,0.25,globals.gSnowSpecular.g,0.25);
+            diffuseColor.rgb = lerp( diffuseColor.rgb, globals.gSnowDiffuse.rgb, globals.gSnowMask );
+        }
+    }
+    if (object.placeableColorScale.w > 0){
+        diffuseColor = lerp(diffuseColor,object.placeableColorScale.rgb,saturate(0.1+getFresnel( facing, 0.15 , 4.0 ))*object.placeableColorScale.w);
+    }
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_GLOSS_COLOR_FS">
+<![CDATA[
+#if defined(GLOSS_MAP)
+    // main specular mixinig
+    pbrMapValues = lerp( pbrMapValues, globals.gMossSpecular, globals.gMossMask );
+    pbrMapValues = lerp( pbrMapValues, globals.gDirtSpecular, globals.gDirtMask );
+    // ---------------------
+    roughness = 1-pbrMapValues.x;
+    bakedAO   = pbrMapValues.y;
+    metalness = pbrMapValues.z;
+    bakedAO  *= globals.gAO;
+#endif
+    { // Snow mixing code 
+        if (globals.gIsSnowing){
+            float3 mPbrMapValues = lerp( float3(1-roughness,bakedAO,metalness), globals.gSnowSpecular, globals.gSnowMask );
+            roughness = 1-mPbrMapValues.x;
+            bakedAO   = mPbrMapValues.y;
+            metalness = mPbrMapValues.z;
+        }
+    } 
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+    { // Snow mixing code 
+        #if defined(ALPHA_BLENDED)
+            if (globals.gIsSnowing){
+                alpha = lerp(alpha,1.0,globals.gSnowMask);
+            }
+        #endif
+    }
+#if defined( VISIBILITY_CUT )
+    alpha *= In.vs.visibilityTexCoords.y > object.visibilityCutThreshold;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="FINAL_POS_FS">
+<![CDATA[
+#if defined(LIGHTING)
+    //oColor = float4(abs(frac(In.vs.defaultTexCoords*20)), 0, 1);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_HEIGHT_RAY_INTERSECTION_FS_">
+<![CDATA[
+
+{
+#if 1
+//numSteps = 10;
+    //numSteps = 1000;
+    //numSteps /= 2;
+    //numSteps *= 0.8;
+
+    // current size of search window
+    float stepHeight = 1.0/numSteps;
+    // search front to back for first point inside object
+    float2 stepUV = stepHeight * ds;
+
+    // Start at -0.5ds because we want to reach the startUV at height=0.5
+    float2 curUV = startUV-ds*referencePlane;
+    float curHeight = 1.0;
+    float curSampledHeight = getBumpHeightAtWithGrad(In, globals, object, curUV, layer, gradX, gradY);
+    float prevSampledHeight = curSampledHeight;
+    while (curSampledHeight < curHeight) {
+        prevSampledHeight = curSampledHeight;
+        curHeight -= stepHeight;
+        curUV += stepUV;
+        curSampledHeight = getBumpHeightAtWithGrad(In, globals, object, curUV, layer, gradX, gradY);
+    }
+
+    // contact refinement, roll back the computation one step to get out of the heightmap
+    curUV -= stepUV;
+    curSampledHeight = prevSampledHeight; //getBumpHeightAtWithGrad(In, globals, object, curUV, gradX, gradY);
+    curHeight += stepHeight;
+    // adjust step
+    stepHeight *= stepHeight*4; // do only 1/4 of the original steps for contact refinement
+    stepUV = stepHeight * ds;
+
+    //get contact refinement uv by raytracing again with better precision
+    while (curSampledHeight < curHeight) {
+        prevSampledHeight = curSampledHeight;
+        curHeight -= stepHeight;
+        curUV += stepUV;
+        curSampledHeight = getBumpHeightAtWithGrad(In, globals, object, curUV, layer, gradX, gradY);
+    }
+
+    //  return curUV; // - stepUV*0.5;
+
+    float2 prevUV = curUV - stepUV;
+    //float prevSampledHeight = getBumpHeightAtWithGrad(In, globals, object, prevUV, layer, gradX, gradY);
+
+    float Ua = (curHeight + stepHeight - prevSampledHeight) /
+               (stepHeight + curSampledHeight - prevSampledHeight);
+    float2 finalUV = prevUV + Ua * stepUV;
+    //finalUV = curUV;
+    //finalUV = prevUV2 - prevUV;
+    
+            /*
+        float curSampledHeight=dot(HeightMapChannel, Tex.SampleGrad(TexSampler,UV+offset,InDDX, InDDY));
+
+        if (rayheight < curSampledHeight)
+        {
+        float xintersect = (oldray-oldtex)+(curSampledHeight-rayheight);
+        xintersect=(curSampledHeight-rayheight)/xintersect;
+        yintersect=(oldray*(xintersect))+(rayheight*(1-xintersect));
+        offset-=(xintersect*UVDist);
+        break;
+        }
+
+        oldray=rayheight;
+        rayheight-=stepsize;
+        offset+=UVDist;
+        oldtex=curSampledHeight;
+    */
+
+    return finalUV;
+#endif
+}
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

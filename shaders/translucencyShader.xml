@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "translucencyAmount" target = "translucencyAmount" type = "float"  defaultValue = "0.35"        minValue = "0.0" maxValue = "1.0"/>
+        <Parameter name = "mixAmount"          target = "mixAmount"          type = "float"  defaultValue = "0.0"         minValue = "0.0" maxValue = "1.0"/>
+        <Parameter name = "col0"               target = "col0"               type = "float3" defaultValue = "0.5 0.5 0.5" minValue = "0.0 0.0 0.0" maxValue = "1.0 1.0 1.0"/>
+        <Parameter name = "snowScale"          target = "snowScale"          type = "float"  defaultValue = "1.0"         minValue = "0.0" maxValue = "1.0"/>
+    </Parameters>
+    <UvUsages/>
+    <VertexAttributes>
+        <VertexAttribute name="color" group="vtxColor"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name="vertexColor" groups="base vtxColor">
+<![CDATA[
+    #define VERTEX_COLOR
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+    float translucencyAmount;
+    float mixAmount;
+    float3 col0;
+    float snowScale;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "LIB_FUNCTION_FS">
+<![CDATA[
+// Season states:
+// cShared3 = 0 = summer
+// cShared3 = 1 = autumn
+// cShared3 = 2 = winter
+// cShared3 = 3 = spring
+// cShared3 = 4 = summer
+// cShared4 = 0 .. 1 = snow control
+float getSnowMask(ObjectParameters& object, float3 mNormal, float mBackfaceScale){
+    float snowLevel = min(cShared4, 1);
+    float mTransition = snowLevel*snowLevel*snowLevel; // pow(cShared4,3);
+    float NdotY = mNormal.y; // dot(mNormal, float3(0.0, 1.0, 0.0));
+    NdotY = max(NdotY * mBackfaceScale, NdotY * (1.0-mBackfaceScale)) + mBackfaceScale;
+    float mSnowMask = object.snowScale*mTransition*saturate(NdotY);
+    return mSnowMask;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+    float  gSnowMask;
+    int    gIsSnowing;
+    float3 gSnowDiffuse;
+    float3 gSnowSpecular;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "START_FS">
+<![CDATA[
+    globals.gSnowDiffuse  = float3(0.7300,0.7668,0.8356);
+    globals.gSnowSpecular = float3(0.1922,0.8706,0.0000);
+    globals.gSnowMask  = 0.0;
+    globals.gIsSnowing = cShared4 > 0.0 && In.vs.defaultTexCoords.x > 0.0 && object.snowScale > 0.0;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined(ALBEDO_MAP)
+    if ( ALBEDO_MAP_TEXCOORDS.x > 0.0 ){ 
+    diffuseColor.rgb = lerp( diffuseColor.rgb, object.col0.rgb, object.mixAmount );
+    }
+#endif
+#if defined(VERTEX_COLOR)
+    diffuseColor *= In.vs.vertexColor.rgb;
+#endif
+    { // Snow mixing code 
+        if (globals.gIsSnowing){
+            // pixelShader normal computed before this point, right after PARALLAX_MAPPING_FS
+            globals.gSnowMask = getSnowMask(object,normal,-0.05);
+            diffuseColor.rgb = lerp( diffuseColor.rgb, globals.gSnowDiffuse.rgb, globals.gSnowMask );
+        }
+    }
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_GLOSS_COLOR_FS">
+<![CDATA[
+    { // Snow mixing code 
+        if (globals.gIsSnowing){
+            float3 mPbrMapValues = lerp( float3(1-roughness,bakedAO,metalness), globals.gSnowSpecular, globals.gSnowMask );
+            roughness = 1-mPbrMapValues.x;
+            bakedAO   = mPbrMapValues.y;
+            metalness = mPbrMapValues.z;
+        }
+    } 
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_LIGHTING_FS">
+<![CDATA[
+{
+    float NdotLNegative = dot(normal, lightDir); 
+    if (NdotLNegative < 0) {
+        NdotLNegative = -NdotLNegative*object.translucencyAmount;
+    }
+    NdotLNegative = min(NdotLNegative, 1);
+    NdotL = saturate(dot(normal, lightDir));
+    float3 lighting = ((atten*NdotLNegative) * diffuseShading + (atten*NdotL)* specularShading )* lightColor;
+    return lighting;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined(ALPHA_BLENDED) || defined(ALPHA_TESTED)
+    #if defined(VERTEX_COLOR)
+        alpha *= In.vs.vertexColor.a;
+    #endif
+#endif
+    { // Snow mixing code 
+        #if defined(ALPHA_BLENDED)
+            if (globals.gIsSnowing){
+                alpha = lerp(alpha,1.0,globals.gSnowMask);
+            }
+        #endif
+    }
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

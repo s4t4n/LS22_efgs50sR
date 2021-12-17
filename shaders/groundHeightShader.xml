@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="alphaBlendStartEnd_densityUVScale" target="alphaBlendStartEnd_densityUVScale" type="float4" defaultValue="75 80 4 4"/>
+        <Parameter name="terrainSizeInvSizeScaleXZScaleY" target="terrainSizeInvSizeScaleXZScaleY" type="float4" defaultValue="4096 0.000244141 0.5 0.00389105"/>
+    </Parameters>
+    <UvUsages>
+        <UvUsage textureName="baseMap"        uvType="custom"/>
+        <UvUsage textureName="normalMap"      uvType="custom"/>
+        <UvUsage textureName="glossMap"       uvType="custom"/>
+        <UvUsage textureName="blendMap"       uvType="worldspace"/>
+        <UvUsage textureName="heightNoiseMap" uvType="worldspace"/>
+    </UvUsages>
+    <Textures>
+      <Texture name="blendMap"       defaultColorProfile="linearRGB" />
+      <Texture name="heightNoiseMap" defaultColorProfile="linearRGB" defaultFilename = "../shared/groundHeightNoise.png"/>
+      <Texture name="baseMap"   type="2dArray"/>
+      <Texture name="glossMap"  type="2dArray"/>
+      <Texture name="normalMap" type="2dArray"/>
+    </Textures>
+    <VertexAttributes>
+        <IgnoredVertexAttribute name="tangent" group="base"/>
+    </VertexAttributes>
+    <LodLevel startDistance="0" subsequentPassForceMode="use">
+        <CodeInjections>
+            <CodeInjection position="SHARED_START">
+<![CDATA[
+// Channel 1: Ground Type
+
+// This should to match with the max height value defined in the i3d
+#define MAX_DELTA_HEIGHT 4.0
+
+//#define STATIC_TEST_GEOMETRY
+
+#if defined(STATIC_TEST_GEOMETRY)
+    #define GET_DELTA_HEIGHT (In.position.y < 0.001 ? 0 : In.position.y)
+    #define TERRAIN_DETAIL_CHANNEL_1
+    #define TERRAIN_DETAIL_TEXTURE_SIZE 16
+#else
+    #define GET_DELTA_HEIGHT (In.normal.w*MAX_DELTA_HEIGHT)
+#endif
+
+#if defined(DIFFUSE) && defined(TERRAIN_DETAIL_CHANNEL_1) // if diffuse is defined, we are in color output mode
+    #define USE_GROUND_SHADER_COLOR
+#endif
+
+#define INTEGER_POSITION
+
+// Overwrite the base shader baseMap and normalMap
+#if !defined(STATIC_TEST_GEOMETRY)
+    #define ALBEDO_MAP_TYPE sampler2DArray
+    #define NORMAL_MAP_TYPE sampler2DArray
+    #define GLOSS_MAP_TYPE sampler2DArray
+
+    #define ALBEDO_MAP_LAYER (globals.groundType-1)
+    #define NORMAL_MAP_LAYER (globals.groundType-1)
+    #define GLOSS_MAP_LAYER (globals.groundType-1)
+#endif
+
+// We do our own alpha testing
+#undef ALPHA_TESTED
+]]>
+            </CodeInjection>
+            <CodeInjection position="SAMPLERS">
+<![CDATA[
+usampler2D blendMap; // X: Ground Type
+sampler2D heightNoiseMap;
+]]>
+            </CodeInjection>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+float4 alphaBlendStartEnd_densityUVScale;
+float4 terrainSizeInvSizeScaleXZScaleY;
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_POSITION_VS">
+<![CDATA[
+float3 inPos = float3(In.position.xyz);
+float3  pos;
+#if defined(STATIC_TEST_GEOMETRY)
+    pos = inPos;
+#else
+    pos.xz = (inPos.xz - 0.5 * object.terrainSizeInvSizeScaleXZScaleY.x) * object.terrainSizeInvSizeScaleXZScaleY.z;
+    pos.y = (inPos.y + 32768) * object.terrainSizeInvSizeScaleXZScaleY.w;
+#endif
+pos.y += 0.003; // offset to avoid z-fights
+
+float deltaHeight = GET_DELTA_HEIGHT;
+if (deltaHeight > 0.0) {
+    // Offset by 0.05 at the ground and offset 0 at 1
+    pos.y += 0.05 * saturate(1 - deltaHeight);
+}
+
+return pos;
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_NORMAL_VS">
+<![CDATA[
+    // convert from ubyte to [-1,1] range
+    return In.normal.xyz - 0.5;
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_TANGENT_VS">
+<![CDATA[
+#if defined(USE_GROUND_SHADER_COLOR)
+    return cross(In.normal.xyz-0.5, float3(0,0,1));
+#else
+    return float3(1,0,0);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_BITANGENT_VS">
+<![CDATA[
+#if defined(USE_GROUND_SHADER_COLOR)
+    float3 tangent = getTangent(In, object);
+    return cross(tangent, In.normal.xyz-0.5);
+#else
+    return float3(0,0,1);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_BITANGENT_SIDE_VS">
+<![CDATA[
+return -1.0;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+float2 uvScale = float2(1.0,1.0); //object.uvScale was here
+Out.defaultTexCoords = position.zx * uvScale;
+Out.dirtTexCoords    = position.zx * float2(0.04,0.04);
+
+Out.blendMapTexCoords = In.texCoords0.xy * object.alphaBlendStartEnd_densityUVScale.zw;
+#if defined(STATIC_TEST_GEOMETRY)
+    Out.blendMapTexCoords = getDefaultTexCoords(In, object);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+float alphaScale : TEXCOORDn;
+float deltaHeight: TEXCOORDn;
+float2 dirtTexCoords : TEXCOORDn;
+
+float2 blendMapTexCoords : TEXCOORDn;
+float2 globalMaskTexCoords : TEXCOORDn;
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_END">
+<![CDATA[
+Out.alphaScale = saturate((length(viewDir)-(object.alphaBlendStartEnd_densityUVScale.x))/(object.alphaBlendStartEnd_densityUVScale.x-object.alphaBlendStartEnd_densityUVScale.y));
+float deltaHeight = GET_DELTA_HEIGHT;
+if (deltaHeight > 0.0) {
+    // Limit the height so that flat heaps will have a shorter blending and steep heaps have a longer blending than what they would have otherwise
+    deltaHeight = clamp(deltaHeight, 0.01, 0.1); // with 25cm this about 11 to 22°
+}
+Out.deltaHeight = deltaHeight;
+Out.globalMaskTexCoords = 0.25 * position.xz;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "LIB_FUNCTION_FS">
+<![CDATA[
+// 0..1 transitional gradient based on 3 inputs
+// mTexture    - cloud nosie style texture
+// mGradient   - input source gradient (smooth 0..1 transition)
+// mAlphaShift - gradient smoothness (0.1 - almost instant switch, 0.5 - smooth transition)
+float alphaGradient(float mTexture, float mGradient, float mAlphaShift){
+    return saturate( (-1 + mGradient + mTexture - mAlphaShift) / mAlphaShift);
+}
+float fitRangeFS(float mIn,float mOldMin,float mOldMax ,float mNewMin ,float mNewMax ){
+    return (mNewMin + (mIn - mOldMin) * (mNewMax  - mNewMin ) / (mOldMax  - mOldMin));
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position="FS_GLOBALS">
+<![CDATA[
+    int groundType;
+    float heightNoise;
+#if defined(USE_GROUND_SHADER_COLOR)
+    float dirt;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="START_FS">
+<![CDATA[
+#if defined(TERRAIN_DETAIL_CHANNEL_1)
+    const int textureSize = tex2DSize(blendMap, 0).x;   
+    const int2 blendUV = int2(In.vs.blendMapTexCoords * float(textureSize)) & (textureSize - 1);
+    globals.groundType = utex2DFetch(blendMap, blendUV, 0).x;
+    if (globals.groundType == 0) {
+        globals.groundType = utex2DFetch(blendMap, (blendUV + int2(1, 1)) & (textureSize - 1), 0).x;
+        if (globals.groundType == 0) {
+            globals.groundType = utex2DFetch(blendMap, (blendUV + int2(1, 0)) & (textureSize - 1), 0).x;
+            if (globals.groundType == 0) {
+                globals.groundType = utex2DFetch(blendMap, (blendUV + int2(0, 1)) & (textureSize - 1), 0).x;
+            }
+        }
+    }
+#else
+    globals.groundType = 0;
+#endif
+
+
+#if defined(USE_GROUND_SHADER_COLOR)
+    globals.dirt = tex2D(heightNoiseMap, In.vs.dirtTexCoords).y*1.2;
+#endif
+    globals.heightNoise = tex2D(heightNoiseMap, In.vs.globalMaskTexCoords).x;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined(USE_GROUND_SHADER_COLOR)
+    diffuseColor *= globals.dirt;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="FINAL_POS_FS">
+<![CDATA[
+//oColor.xyz *= 0.001;
+//oColor.xyz += globals.groundType/3;
+    alpha = tex2D(baseMap, float3(ALBEDO_MAP_TEXCOORDS, ALBEDO_MAP_LAYER)).a; // was not loaded before, so force it 
+#if !defined(LIGHTING)
+    // alpha 1: always visible, alpha 0: visible after 10cm height
+    float visThreshold = saturate(1-alpha - (0.5*(globals.heightNoise-0.55))) * 0.1;
+    float vis = (float)(In.vs.deltaHeight > visThreshold) * (float)(globals.groundType > 0) * In.vs.alphaScale;
+    // new formula, almost the same result as old 
+    //float vis = alphaGradient(saturate(alpha - (0.5*(globals.heightNoise-0.55))),fitRangeFS(In.vs.deltaHeight,0.01,0.1,0.0,1.0),0.05) * (float)(globals.groundType > 0) * In.vs.alphaScale;
+    clip( vis - 0.001 );
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

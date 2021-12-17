@@ -1,0 +1,473 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "placeableColorScale" target = "placeableColorScale" type = "float4" group = "base"           defaultValue = "0.0 1.0 0.0 0.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name = "yOffset"             target = "yOffset"             type = "float"  group = "vtxOffset"      defaultValue = "0.0"             minValue = "-10.0"           maxValue = "10.0"/>
+        <Parameter name = "snowScale"           target = "snowScale"           type = "float"  group = "base"           defaultValue = "1.0"             minValue = "0.0"             maxValue = "1.0"/>
+        <Parameter name = "hideArea"            target = "hideArea"            type = "float4" group = "hideArea"       defaultValue = "0.0 0.0 0.0 0.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name = "hideSectionStates"   target = "hideSectionStates"   type = "float4" group = "hideSection"    defaultValue = "1.0 1.0 1.0 1.0" minValue = "0.0 0.0 0.0 0.1" maxValue = "1.0 1.0 1.0 100.0"/>
+        <Parameter name = "hideShiftOffset"     target = "hideShiftOffset"     type = "float"  group = "hideShift"      defaultValue = "0.0"             minValue = "-1.0"            maxValue = "1.0"/>
+        <Parameter name = "hideByIndex"         target = "hideByIndex"         type = "float"  group = "mergeChildren"  defaultValue = "-1.0"            minValue = "-1"              maxValue = "32767"/>
+        <Parameter name = "harvestPosition"     target = "harvestPosition"     type = "float4" group = "harvestShake"   defaultValue = "0 1.5 0 0"       minValue = "0.0 0.0 0.0 0.0" maxValue = "10.0 10.0 10.0 10.0"/>
+        <Parameter name = "shakeScale"          target = "shakeScale"          type = "float4" group = "harvestShake"   defaultValue = "0.15 0.0 1 1.5"   minValue = "0.0 0.0 0.0 0.0" maxValue = "10.0 10.0 10.0 10.0"/>
+    </Parameters>
+    <UvUsages>
+        <UvUsage textureName="baseMap"       uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="normalMap"     uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="glossMap"      uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="alphaMap"      uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="mSnowSpecular" uvType="worldspace"/>
+        <UvUsage textureName="mParallaxMap"  uvType="uv0" uvScale="1.0"/>
+    </UvUsages>
+    <Textures>
+        <Texture name = "mSnowSpecular" group="base"           defaultColorProfile = "linearRGB" defaultFilename = "$data/maps/textures/shared/snow_specular.png"/>
+        <Texture name = "alphaMap"      group="alphaMap"       defaultColorProfile = "linearRGB" defaultFilename = "$data/shared/default_alpha.png"/>
+        <Texture name = "mParallaxMap"  group="customParallax" defaultColorProfile = "linearRGB" defaultFilename = "$data/maps/textures/shared/default_height.png"/>
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="uv1"   group="uv1Attr"/>
+        <VertexAttribute name="color" group="colorAttr"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name = "alphaMap" groups="base alphaMap">
+<![CDATA[
+    // alpha is loaded from alphaMap
+    #define ALPHA_MAP
+]]>
+        </Variation>
+        <Variation name = "customParallax" groups="base customParallax">
+<![CDATA[
+    #define CUSTOM_PARALLAX
+]]>
+        </Variation>
+        <Variation name = "vertexOffset" groups="base uv1Attr vtxOffset">
+<![CDATA[
+    // offset the vrtices of the mesh on worldSpace by yOffset in Y positive direction
+    // uses uv1.x as gradient to control offset intensity // uv1.x == 0 - no offset, uv1.x == 1 - yOffset offset
+    #define VERTEX_OFFSET
+]]>
+        </Variation>
+        <Variation name = "vertexOffset_Decal" groups="base uv1Attr vtxOffset">
+<![CDATA[
+    #define VERTEX_OFFSET
+    #define DECAL_RENDER 
+]]>
+        </Variation>
+        <Variation name = "wind_vertexOffset" groups="base uv1Attr vtxOffset colorAttr">
+<![CDATA[
+    // the same as vertexOffset but it has wind animation build-in
+    // also uses cShared0, cShared1, cShared2 for wind control 
+    #define WIND
+    #define VERTEX_OFFSET
+]]>
+        </Variation>
+        <Variation name = "wind_vertexOffset_hideAlpha" groups="base uv1Attr vtxOffset colorAttr hideArea hideSection">
+<![CDATA[
+    // intendent to be used with specificly made uv's
+    // if sectionState = 0 set alpha = 0 if texel is within a given rectangle defined by the shader parameter hideArea
+    #define WIND
+    #define VERTEX_OFFSET
+    #define HIDE_ALPHA
+    #define SECTIONS
+    #define UV_BASED_SECTIONS // sectionIndex is taken from uv0.x > 1
+]]>
+        </Variation>
+        <Variation name = "wind_vertexOffset_hideAlpha_harvestShake" groups="base uv1Attr vtxOffset colorAttr hideArea hideSection harvestShake">
+<![CDATA[
+    // intendent to be used with specificly made uv's
+    // if sectionState = 0 set alpha = 0 if texel is within a given rectangle defined by the shader parameter hideArea
+    #define WIND
+    #define VERTEX_OFFSET
+    #define HIDE_ALPHA
+    #define SECTIONS
+    #define UV_BASED_SECTIONS // sectionIndex is taken from uv0.x > 1
+    #define HARVEST_SHAKE
+]]>
+        </Variation>
+        <Variation name = "vertexOffset_hideUVShift" groups="base uv1Attr vtxOffset hideArea hideShift hideSection">
+<![CDATA[
+    // intendent to be used with specificly made uv's for LOD's
+    // moves uv's by hideShiftOffset in the given rectangle
+    // sectionIndex is hard-coded and equally spaced (uv0.x - divided on 3 parts)
+    // controled via hideSectionStates
+    #define VERTEX_OFFSET
+    #define HIDE_UV_SHIFT
+    #define SECTIONS
+]]>
+        </Variation>
+        <Variation name = "wind_vertexOffset_hideUVShift_uvBasedSections" groups="base uv1Attr vtxOffset colorAttr hideArea hideShift hideSection">
+<![CDATA[
+    #define WIND
+    #define VERTEX_OFFSET
+    #define HIDE_UV_SHIFT
+    #define SECTIONS
+    #define UV_BASED_SECTIONS
+]]>
+        </Variation>
+        <Variation name = "wind_vertexOffset_hideUVShift_uvBasedSections_harvestShake" groups="base uv1Attr vtxOffset colorAttr hideArea hideShift hideSection harvestShake">
+<![CDATA[
+    #define WIND
+    #define VERTEX_OFFSET
+    #define HIDE_UV_SHIFT
+    #define SECTIONS
+    #define UV_BASED_SECTIONS
+    #define HARVEST_SHAKE
+]]>
+        </Variation>
+        <Variation name = "mergeChildren_hideByIndex" groups="base mergeChildren">
+<![CDATA[
+    // intended to be used with FREEZED mergeChildren
+    // visibility of the elements controlled via shader parameter hideByIndex
+    // if hideByIndex == -1 - all objects visible 
+    #define MERGE_CHILDREN_HIDE_BY_INDEX
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="SHARED_START">
+<![CDATA[
+#if defined(CUSTOM_PARALLAX)
+    #define PARALLAX_MAP
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="CONFIG_DEFINES">
+<![CDATA[
+#if defined(ALPHA_MAP) && !defined(ALPHA_BLENDED)
+    #define ALPHA_TESTED
+#endif
+#if defined(PARALLAX_MAP)
+    #if GPU_PROFILE >= GPU_PROFILE_HIGH
+        #define PARALLAX_OCCLUSION_MAPPING
+    #endif
+    #define PARALLAX_MAPPING_NON_SQUARE_TEXTURE
+#endif
+#define PARALLAX_MAPPING_REFERENCE_PLANE 0.5
+]]>
+            </CodeInjection>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+    float4 placeableColorScale;
+#if defined(VERTEX_OFFSET)
+    float yOffset;
+#endif
+#if defined(HIDE_ALPHA) || defined(HIDE_UV_SHIFT)
+    float4 hideArea;
+#endif
+#if defined(SECTIONS)
+    float4 hideSectionStates;
+#endif
+#if defined(HIDE_UV_SHIFT)
+    float hideShiftOffset;
+#endif
+#if defined(MERGE_CHILDREN_HIDE_BY_INDEX)
+    float hideByIndex;
+#endif
+    float snowScale;
+#if defined(HARVEST_SHAKE)
+/*
+    harvestPosition.xyz - current harvest world postion // shaking center point
+    harvestPosition.w   - harvest intensity
+*/
+    float4 harvestPosition;
+/*
+    shakeScale.xy - max xz offset // localspace vector with built-in shaking intensity
+    shakeScale.z  - max intensity
+    shakeScale.w  - max distance  // controls shaking mask radius 
+*/
+    float4 shakeScale;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "VS_INPUT">
+<![CDATA[
+#if defined(HARVEST_SHAKE)
+    float gMask;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FILL_VERTEX_INPUT_VS">
+<![CDATA[
+#if defined(HARVEST_SHAKE)
+    float3 fullWorldPosition = mul(object.modelMatrix, float4(In.position.xyz, 1))+ float3(invViewMatrix[0][3], invViewMatrix[1][3], invViewMatrix[2][3]);
+    // sphere mask based on harvestPosition.xyz (worldSpace) and fullWorldPosition.xyz of the vertices 
+    In.gMask = saturate(1.0-min(distance(object.harvestPosition.xyz,fullWorldPosition.xyz)/object.shakeScale.w,1.0));
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "LIB_FUNCTION_VS">
+<![CDATA[
+// Custom vertex functions
+//
+// the same vertex shader code which is re-used twice in GET_POSITION_VS and GET_PREV_POSITION_VS
+// only with different values
+//
+float3 getCustomPositionVS( VS_INPUT    In,
+                      ObjectParameters& object,
+                                float   mTime ){
+    // =================================
+    // cShared0 - wind strength
+    // cShared1 - wind vector x component
+    // cShared2 - wind vector z component
+    float3 deformedPos = In.position.xyz;
+#if defined(VERTEX_OFFSET)
+    float2 maskMapTexCoords = saturate(convertDefaultTexCoords(In, object, In.texCoords1.xy)); // bring textcoord to 0..1
+    // perform wind vertex animation 
+#if defined(WIND) && !defined(DEPTH_VIS) // avoid shadow artefacts by not animating in the shadow map
+    float3 windDirection = float3(1.0,0.0,0.0);
+    windDirection.xyz = normalize(float3(cShared1, 0.0 ,cShared2));
+    if (0==cShared1 && 0== cShared2){
+        windDirection = float3(1.0,0.0,0.0);
+    }
+    // --------------------
+    float3 mObjPos = float3(object.modelMatrix[0][3] + invViewMatrix[0][3],
+                            object.modelMatrix[1][3] + invViewMatrix[1][3],
+                            object.modelMatrix[2][3] + invViewMatrix[2][3]);
+    float mObjPosVarSeed = mObjPos.x + mObjPos.y + mObjPos.z;
+    // --------------------
+    float3 mFreq       = 5.0*In.position.xyz;
+    float mAttenuation = In.color.x;
+    float3 mOffset     = sin(mTime*8.15 + mFreq.x+mFreq.y+mFreq.z + mObjPosVarSeed)*cos(mTime*3.35 + 0.5*mFreq.x+mFreq.y+mFreq.z + mObjPosVarSeed);
+    float3 mOffset1    = 0.002*mOffset;
+    float3 mOffset2    =  0.01*mOffset;
+    deformedPos += lerp( mOffset1, mOffset2, saturate(cShared0) )*windDirection*mAttenuation;
+#endif
+    // offset vertically by object.yOffset
+    deformedPos = lerp(deformedPos.xyz, deformedPos.xyz+float3(0,object.yOffset,0),maskMapTexCoords.x);
+#endif
+// perform shaking vertex animation 
+#if defined(HARVEST_SHAKE)
+    float3 shakeOffset = float3(0.0,0.0,0.0); // do not shake vertically 
+    shakeOffset.x = object.shakeScale.x * saturate(min(object.harvestPosition.w / object.shakeScale.z, 1.0));
+    deformedPos += In.gMask * sin(50*mTime) * shakeOffset;
+#endif
+    return deformedPos;
+}
+float getIndex(VS_INPUT In){
+    // in order to get correct index this mesh must be mergeChildren
+    return 32767*In.normal.w; // 0,1,2 ... 32767
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_POSITION_VS">
+<![CDATA[
+    float3 mDeformed = getCustomPositionVS(In, object, cTime_s);
+#if defined(SKINNING)
+    return skinPoint(mDeformed.xyz, In, object) - float3(invViewMatrix[0][3], invViewMatrix[1][3], invViewMatrix[2][3]);
+#else
+    return mDeformed.xyz;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_PREV_POSITION_VS">
+<![CDATA[
+    float3 mDeformed = getCustomPositionVS(In, object, cPrevTime_s);
+#if defined(SKINNING)
+    return skinPrevPoint(mDeformed.xyz, In, object) - float3(invViewMatrix[0][3], invViewMatrix[1][3], invViewMatrix[2][3]);
+#else
+    return mDeformed.xyz;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_WORLD_POSE_VS">
+<![CDATA[
+#if defined(SKINNING) && defined(PARTICLE_SYSTEM)
+error
+#else
+    prevWorldPosition = mul(object.prevModelMatrix, float4(prevPosition, 1));
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+    float2 texCoordsX  : TEXCOORDn;
+    float2 texCoordsY  : TEXCOORDn;
+    float2 texCoordsZ  : TEXCOORDn;
+    float3 localNormal : TEXCOORDn;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+    float3 localPosition = In.position.xyz;
+    float mUVScale = 1.0;
+    Out.texCoordsY = mUVScale * localPosition.zx;
+    Out.texCoordsZ = mUVScale * localPosition.yx;
+    Out.texCoordsX = mUVScale * localPosition.yz;
+    Out.localNormal = normalize(In.normal.xyz);
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_END">
+<![CDATA[
+#if defined(MERGE_CHILDREN_HIDE_BY_INDEX)
+    if (object.hideByIndex > getIndex(In)){
+        Out.position = float4(0,0,0,-1); // hide the vertices 
+    }
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+// snow textures
+sampler2D mSnowSpecular;
+#if defined(ALPHA_MAP)
+    sampler2D alphaMap;
+#endif
+#if defined(CUSTOM_PARALLAX)
+    sampler2D mParallaxMap;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_BUMP_HEIGHT_AT_WITH_GRAD_FS">
+<![CDATA[
+#if defined(CUSTOM_PARALLAX)
+    return tex2Dgrad(mParallaxMap, float3(uv, layer), gradX, gradY).r;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_BUMP_HEIGHT_AT_FS">
+<![CDATA[
+#if defined(CUSTOM_PARALLAX)
+    return tex2D(mParallaxMap, float3(uv, layer)).r;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_BUMP_HEIGHT_TEXTURE_SIZE_FS">
+<![CDATA[
+#if defined(CUSTOM_PARALLAX)
+    return tex2DSize(mParallaxMap, 0);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "LIB_FUNCTION_FS">
+<![CDATA[
+// 0..1 transitional gradient based on 3 inputs
+// mTexture    - cloud nosie style texture
+// mGradient   - input source gradient (smooth 0..1 transition)
+// mAlphaShift - gradient smoothness (0.1 - almost instant switch, 0.5 - smooth transition)
+float alphaGradient(float mTexture, float mGradient, float mAlphaShift){
+    return saturate( (-1 + mGradient + mTexture - mAlphaShift) / mAlphaShift);
+}
+// Season states:
+// cShared3 = 0 = summer
+// cShared3 = 1 = autumn
+// cShared3 = 2 = winter
+// cShared3 = 3 = spring
+// cShared3 = 4 = summer
+// cShared4 = 0 .. 1 = snow control
+float getSnowMask(ObjectParameters& object, float3 mNormal, float mBackfaceScale, float mAlpha, float mAlphaThreshold){
+    float snowLevel = min(cShared4, 1);
+    float mTransition = 1 - snowLevel*snowLevel*snowLevel; // pow(cShared4,3);
+    float NdotY = mNormal.y; // dot(mNormal, float3(0.0, 1.0, 0.0));
+    NdotY = max(NdotY * mBackfaceScale, NdotY * (1.0-mBackfaceScale)) + mBackfaceScale;
+    float mSnowMask = saturate(object.snowScale*alphaGradient(mAlpha,NdotY,mAlphaThreshold)-mTransition);
+    return mSnowMask;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+    float  gSnowMask;
+    int    gIsSnowing;
+    float3 gSnowDiffuse;
+    float3 gSnowSpecular;
+    float  gSnowMaskGradient;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "START_FS">
+<![CDATA[
+    {
+        float3 mAbsNormal   = abs(In.vs.localNormal);
+        mAbsNormal /= (mAbsNormal.x + mAbsNormal.y + mAbsNormal.z);
+        float2 uvs = mAbsNormal.x > mAbsNormal.y ? (mAbsNormal.x > mAbsNormal.z ? In.vs.texCoordsX : In.vs.texCoordsZ) : (mAbsNormal.y > mAbsNormal.z ? In.vs.texCoordsY : In.vs.texCoordsZ);
+        globals.gSnowDiffuse  = float3(0.7300,0.7668,0.8356);
+        // snow texture is 1024x1024 so we need to scale uv's
+        globals.gSnowSpecular = tex2D( mSnowSpecular, 0.5*uvs ).rgb;
+    }
+    globals.gSnowMask  = 0.0;
+    globals.gIsSnowing = cShared4 > 0.0 && In.vs.defaultTexCoords.x > 0.0 && object.snowScale > 0.0;
+    globals.gSnowMaskGradient  = 1.0;
+    #if defined(GLOSS_MAP)
+        globals.gSnowMaskGradient = tex2D(glossMap, GLOSS_MAP_TEXCOORDS).a;
+    #endif
+
+    #if defined(HIDE_UV_SHIFT) || defined(HIDE_ALPHA)
+        float sectionIndex;
+        float4 hideSectionStates = object.hideSectionStates;
+
+        #if defined(UV_BASED_SECTIONS)
+            sectionIndex = floor(In.vs.defaultTexCoords.x);
+            float hideSectionState = (sectionIndex  == 0) + hideSectionStates.x * (sectionIndex  == 1) + hideSectionStates.y * (sectionIndex  == 2) + hideSectionStates.z * (sectionIndex  == 3);
+        #else
+            sectionIndex = floor(In.vs.defaultTexCoords.x * 3);
+            float hideSectionState = hideSectionStates.x * (sectionIndex  == 0) + hideSectionStates.y * (sectionIndex  == 1) + hideSectionStates.z * (sectionIndex  == 2);
+        #endif
+
+        // check if uvs are in hide area
+        float2 uvs = In.vs.defaultTexCoords;
+        float4 hideArea = object.hideArea;
+        #if defined(UV_BASED_SECTIONS)
+            uvs.x -= sectionIndex;
+        #endif
+
+        float hideIsInArea = (float) (uvs.x > hideArea.x) * (uvs.x < hideArea.y) * (uvs.y > hideArea.z) * (uvs.y < hideArea.w);
+
+        #if defined(HIDE_UV_SHIFT)
+            // if hideSection is active we want to shift the uvs. otherwise take the original uvs
+            In.vs.defaultTexCoords.y += object.hideShiftOffset * hideSectionState * hideIsInArea;
+        #endif
+    #endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+    { // Snow mixing code
+        if (globals.gIsSnowing){
+            // pixelShader normal computed before this point, right after PARALLAX_MAPPING_FS
+            // globals.gSnowSpecular.g - ambient occlusion used as alpha (should be less than 1.0)
+            globals.gSnowMask = getSnowMask(object,normal,0.25,globals.gSnowMaskGradient*globals.gSnowSpecular.g,0.25);
+            diffuseColor.rgb = lerp( diffuseColor.rgb, globals.gSnowDiffuse.rgb, globals.gSnowMask );
+        }
+    }
+    // placeable Color
+    if (object.placeableColorScale.w > 0){
+        diffuseColor = lerp(diffuseColor,object.placeableColorScale.rgb,saturate(0.1+getFresnel( facing, 0.15 , 4.0 ))*object.placeableColorScale.w);
+    }
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_GLOSS_COLOR_FS">
+<![CDATA[
+    { // Snow mixing code
+        if (globals.gIsSnowing){
+            float3 mPbrMapValues = lerp( float3(1-roughness,bakedAO,metalness), globals.gSnowSpecular, globals.gSnowMask );
+            roughness = 1-mPbrMapValues.x;
+            bakedAO   = mPbrMapValues.y;
+            metalness = mPbrMapValues.z;
+        }
+    }
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined(ALPHA_MAP)
+    // load alpha from separate texture
+    alpha = tex2D(alphaMap, ALBEDO_MAP_TEXCOORDS).r;
+#endif
+#if defined(ALPHA_BLENDED) && defined(DECAL_RENDER)
+    reflectingLightingScale = alpha;
+#endif
+    { // Snow mixing code
+        #if defined(ALPHA_BLENDED)
+            if (globals.gIsSnowing){
+                alpha = lerp(alpha,1.0,globals.gSnowMask);
+            }
+        #endif
+        #if defined(HIDE_ALPHA)
+            alpha *= 1 - (hideIsInArea * (1 - hideSectionState));
+        #endif
+    }
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

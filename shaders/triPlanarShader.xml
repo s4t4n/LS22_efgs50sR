@@ -1,0 +1,241 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="uvScale"     target="uvScale"     type="float4" group="base"       defaultValue="0.25 0.25 1.0 1.0" minValue = "-10.0 -10.0 -10.0 -10.0" maxValue = "10.0 10.0 10.0 10.0"/>
+        <Parameter name="diffuseMix"  target="diffuseMix"  type="float4" group="diffuseMix" defaultValue="0.65 0.0 0.0 0.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name="snowScale"   target="snowScale"   type="float"  group="base"       defaultValue="1.0"               minValue = "0.0"  maxValue = "1.0"/>
+    </Parameters>
+    <UvUsages>
+        <UvUsage textureName="baseMap"       uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="normalMap"     uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="glossMap"      uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="projDiffuse1"  uvType="worldspace"/>
+        <UvUsage textureName="projNormal1"   uvType="worldspace"/>
+        <UvUsage textureName="projDiffuse2"  uvType="worldspace"/>
+        <UvUsage textureName="projNormal2"   uvType="worldspace"/>
+        <UvUsage textureName="mSnowSpecular" uvType="worldspace"/>
+    </UvUsages>
+    <Textures>
+        <Texture name = "projDiffuse1"  group="base"  defaultColorProfile = "sRGB"      defaultFilename = "$data/shared/default_diffuse.png"/>
+        <Texture name = "projNormal1"   group="base"  defaultColorProfile = "linearRGB" defaultFilename = "$data/shared/default_normal.png"/>
+        <Texture name = "projDiffuse2"  group="proj2" defaultColorProfile = "sRGB"      defaultFilename = "$data/shared/default_diffuse.png"/>
+        <Texture name = "projNormal2"   group="proj2" defaultColorProfile = "linearRGB" defaultFilename = "$data/shared/default_normal.png"/>
+        <Texture name = "mSnowSpecular" group="base"  defaultColorProfile = "linearRGB" defaultFilename = "$data/maps/textures/shared/snow_specular.png"/>
+    </Textures>
+    <Variations>
+        <Variation name="projNormal_terrainFormat" groups="base">
+<![CDATA[
+/*
+    projNormal.r -  normal.r 
+    projNormal.g -  normal.g
+    projNormal.b -  smoothness 
+    projNormal.a -  parallax height (0 = down, 0.5 = mid, 1 = up) // not used 
+    
+    smoothness - loaded from projNormal.r
+*/
+    #define PROJNORMAL_TERRAIN_FORMAT 
+]]>
+        </Variation>
+        <Variation name="enable_proj2_masking_terrainFormat" groups="base proj2">
+<![CDATA[
+    #define ENABLE_PROJ2_MASKING
+    #define PROJNORMAL_TERRAIN_FORMAT 
+]]>
+        </Variation>
+        <Variation name="enable_proj2_masking_terrainFormat_diffuseMix" groups="base diffuseMix">
+<![CDATA[
+    #define ENABLE_PROJ2_MASKING
+    #define PROJNORMAL_TERRAIN_FORMAT
+    #define DIFFUSE_MIX
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="CONFIG_DEFINES">
+<![CDATA[
+/*
+#if defined(PARALLAX_MAP)
+    #undef PARALLAX_MAPPING
+    #undef PARALLAX_OCCLUSION_MAPPING
+#endif
+*/
+]]>
+            </CodeInjection>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+    float4 uvScale;
+#if defined( DIFFUSE_MIX )
+    float4 diffuseMix;
+#endif
+    float snowScale;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+sampler2D projDiffuse1;
+sampler2D projNormal1;
+#if defined( ENABLE_PROJ2_MASKING )
+    sampler2D projDiffuse2;
+    sampler2D projNormal2;
+#endif
+// snow textures
+sampler2D mSnowSpecular;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "LIB_FUNCTION_FS">
+<![CDATA[
+// 0..1 transitional gradient based on 3 inputs
+// mTexture    - cloud nosie style texture
+// mGradient   - input source gradient (smooth 0..1 transition)
+// mAlphaShift - gradient smoothness (0.1 - almost instant switch, 0.5 - smooth transition)
+float alphaGradient(float mTexture, float mGradient, float mAlphaShift){
+    return saturate( (-1 + mGradient + mTexture - mAlphaShift) / mAlphaShift);
+}
+// Season states:
+// cShared3 = 0 = summer
+// cShared3 = 1 = autumn
+// cShared3 = 2 = winter
+// cShared3 = 3 = spring
+// cShared3 = 4 = summer
+// cShared4 = 0 .. 1 = snow control
+float getSnowMask(ObjectParameters& object, float3 mNormal, float mBackfaceScale, float mAlpha, float mAlphaThreshold){
+    float mTransition = cShared4*cShared4*cShared4; // pow(cShared4,3);
+    float NdotY = mNormal.y; // dot(mNormal, float3(0.0, 1.0, 0.0));
+    NdotY = max(NdotY * mBackfaceScale, NdotY * (1.0-mBackfaceScale)) + mBackfaceScale;
+    float mSnowMask = object.snowScale*mTransition*alphaGradient(mAlpha,NdotY,mAlphaThreshold);
+    return mSnowMask;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+    float  gSnowMask;
+    int    gIsSnowing;
+    float3 gSnowDiffuse;
+    float3 gSnowSpecular;
+    float2 gUVs;
+    float3 gSpecular;
+    float4 gDetailDiffuse;
+    float4 gDetailSpecular;
+    float4 gDetailNormal;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "VS_OUTPUT">
+<![CDATA[
+float2 texCoordsX : TEXCOORDn;
+float2 texCoordsY : TEXCOORDn;
+float2 texCoordsZ : TEXCOORDn;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_SET_TEXCOORDS_VS">
+<![CDATA[
+    float3 fullWorldPosition = worldPosition + float3(invViewMatrix[0][3], invViewMatrix[1][3], invViewMatrix[2][3]);
+    Out.texCoordsX = fullWorldPosition.yz;
+    Out.texCoordsY = fullWorldPosition.xz;
+    Out.texCoordsZ = fullWorldPosition.xy;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "START_FS">
+<![CDATA[
+    {
+        float3 mAbsNormal = abs(In.vs.worldNormal);
+        mAbsNormal /= (mAbsNormal.x + mAbsNormal.y + mAbsNormal.z);
+        float2 uvs = mAbsNormal.x > mAbsNormal.y ? (mAbsNormal.x > mAbsNormal.z ? In.vs.texCoordsX : In.vs.texCoordsZ) : (mAbsNormal.y > mAbsNormal.z ? In.vs.texCoordsY : In.vs.texCoordsZ);
+        // -------------------------------------------
+        globals.gUVs = object.uvScale.xy * uvs;
+        // -------------------------------------------
+        globals.gSnowDiffuse  = float3(0.7300,0.7668,0.8356);
+        // snow texture is 1024x1024 so we need to scale uv's
+        globals.gSnowSpecular = tex2D( mSnowSpecular, 0.5*uvs ).rgb;
+        globals.gSnowMask  = 0.0;
+        globals.gIsSnowing = cShared4 > 0.0 && In.vs.defaultTexCoords.x > 0.0 && object.snowScale > 0.0;
+    }
+    globals.gSpecular = float3(0.0,1.0,0.0); 
+#if defined(GLOSS_MAP)
+    globals.gSpecular = tex2D(glossMap, GLOSS_MAP_TEXCOORDS);
+#endif
+    globals.gDetailDiffuse  = tex2D( projDiffuse1, globals.gUVs ).rgba;
+    globals.gDetailNormal   = tex2D( projNormal1,  globals.gUVs ).xyzw;
+    globals.gDetailSpecular = float4(0.0,1.0,0.0,0.0);
+#if defined(ENABLE_PROJ2_MASKING)
+    float mMask = globals.gSpecular.b;
+    globals.gDetailDiffuse = lerp(globals.gDetailDiffuse,tex2D( projDiffuse2, globals.gUVs ).rgba, mMask );
+    globals.gDetailNormal  = lerp(globals.gDetailNormal, tex2D( projNormal2,  globals.gUVs ).rgba, mMask );
+#endif
+#if defined( PROJNORMAL_TERRAIN_FORMAT )
+    globals.gDetailSpecular.r = globals.gDetailNormal.b;
+#endif
+    globals.gDetailNormal -= 0.5;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_UNNORMALIZED_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+#if defined( NORMAL_MAP )
+    float3 mNormal;
+    #ifdef NORMAL_MAP_SIGNED_2CHANNEL
+        // use BC5 signed format for the normal map
+        mNormal.xy = tex2D(normalMap, NORMAL_MAP_TEXCOORDS).xy;
+        mNormal.z = sqrt(1.0 - dot(mNormal.xy, mNormal.xy));
+    #else
+        mNormal = tex2D(normalMap, NORMAL_MAP_TEXCOORDS).xyz - 0.5;
+    #endif
+    return mNormal + float3(globals.gDetailNormal.xy, 0.0);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+#if defined( NORMAL_MAP )
+    return normalize(getUnnormalizedTangentSpaceNormal(In, globals, object));
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined( DIFFUSE_MIX )
+    diffuseColor.rgb = lerp(diffuseColor.rgb,globals.gDetailDiffuse.rgb,object.diffuseMix.x);
+#else
+    diffuseColor.rgb = globals.gDetailDiffuse.rgb;
+#endif
+    { // Snow mixing code 
+        if (globals.gIsSnowing){
+            // pixelShader normal computed before this point, right after PARALLAX_MAPPING_FS
+            // globals.gSnowSpecular.g - ambient occlusion used as alpha (should be less than 1.0)
+            globals.gSnowMask = getSnowMask(object,normal,0.25,globals.gSnowSpecular.g,0.25);
+            diffuseColor.rgb = lerp( diffuseColor.rgb, globals.gSnowDiffuse.rgb, globals.gSnowMask );
+        }
+    }
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_GLOSS_COLOR_FS">
+<![CDATA[
+#if defined( SPECULAR ) && defined( GLOSS_MAP )
+    roughness = 1 - globals.gSpecular.r;
+    bakedAO   = globals.gSpecular.g;
+    #if defined( PROJNORMAL_TERRAIN_FORMAT ) 
+        roughness = 1 - globals.gDetailSpecular.r;
+    #endif
+    metalness = 0.0;
+#endif
+    { // Snow mixing code 
+        if (globals.gIsSnowing){
+            float3 mPbrMapValues = lerp( float3(1-roughness,bakedAO,metalness), globals.gSnowSpecular, globals.gSnowMask );
+            roughness = 1-mPbrMapValues.x;
+            bakedAO   = mPbrMapValues.y;
+            metalness = mPbrMapValues.z;
+        }
+    } 
+]]>
+            </CodeInjection>
+            <CodeInjection position="FINAL_POS_FS">
+<![CDATA[
+#if defined( DEBUG_SHOW_PARALLAX )
+    oColor.rgb  = 1 - roughness ;
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

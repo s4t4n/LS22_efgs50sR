@@ -1,0 +1,640 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="scrollPosition"      target="scrollPosition"      group="base"   type="float4" defaultValue = "0.1 0 1 0"  minValue = "-4.0 0 0 0" maxValue = "4.0 10 10 1"/>
+        <Parameter name="prevScrollPosition"  target="prevScrollPosition"  group="base"   type="float4" defaultValue = "0.1 0 1 0"  minValue = "-4.0 0 0 0" maxValue = "4.0 10 10 1"/>
+        <Parameter name="fadeProgress"        target="fadeProgress"        group="base"   type="float4" defaultValue = "1.0 0.0 1.0 0.0"  minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name="visibilityX"         target="visibilityX"         group="base"   type="float2" defaultValue = "50.0 -50.0"  minValue = "-50.0 -50.0" maxValue = "50.0 50.0"/>
+        <Parameter name="visibilityY"         target="visibilityY"         group="base"   type="float2" defaultValue = "50.0 -50.0"  minValue = "-50.0 -50.0" maxValue = "50.0 50.0"/>
+        <Parameter name="visibilityZ"         target="visibilityZ"         group="base"   type="float2" defaultValue = "50.0 -50.0"  minValue = "-50.0 -50.0" maxValue = "50.0 50.0"/>
+        <Parameter name="density"             target="density"             group="base"   type="float"  defaultValue = "1.0"  minValue = "0.0" maxValue = "1.0"/>
+        <Parameter name="verticalOffset"      target="verticalOffset"      group="base"   type="float"  defaultValue = "0.0"  minValue = "-5.0" maxValue = "5.0"/>
+        <Parameter name="subUVspeed"          target="subUVspeed"          group="subUV"  type="float"  defaultValue = "10.0" minValue = "0.0" maxValue = "64.0"/>
+        <Parameter name="subUVelements"       target="subUVelements"       group="subUV"  type="float2" defaultValue = "8.0 4.0"  minValue = "1.0 1.0"   maxValue = "64.0 64.0"/>
+        <Parameter name="sizeScale"           target="sizeScale"           group="scale"  type="float2" defaultValue = "1.0 3.0"  minValue = "0.0 0.0"   maxValue = "10.0 10.0"/>
+        <Parameter name="rotateSpeed"         target="rotateSpeed"         group="rotate" type="float"  defaultValue = "3.14"  minValue = "0.0"   maxValue = "100.0"/>
+    </Parameters>
+    <UvUsages>
+        <UvUsage textureName="baseMap"     uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="normalMap"   uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="glossMap"    uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="alphaMap"    uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="shapeArray"  uvType="custom"/>
+        <UvUsage textureName="densityMask" uvType="custom"/>
+    </UvUsages>
+    <Textures>
+        <Texture name = "shapeArray"  group="base"     defaultColorProfile = "linearRGB" type = "2dArray"    defaultFilename = "$data/effects/defaultArray.png"/>
+        <Texture name = "densityMask" group="base"     defaultColorProfile = "linearRGB" defaultWrap="false" defaultFilename = "$data/effects/mask01_diffuse.png"/>
+        <Texture name = "alphaMap"    group="alphaMap" defaultColorProfile = "linearRGB" defaultFilename = "$data/shared/default_alpha.png"/>
+    </Textures>
+    <Variations>
+        <Variation name = "alphaMap" groups="base alphaMap">
+<![CDATA[
+    // alpha is loaded from alphaMap
+    #define ALPHA_MAP
+]]>
+        </Variation>
+        <Variation name = "cosOffsetY" groups="base">
+<![CDATA[
+    #define COS_OFFSET_Y
+]]>
+        </Variation>
+        <Variation name = "alphaMap_cosOffsetY" groups="base alphaMap">
+<![CDATA[
+    #define ALPHA_MAP
+    #define COS_OFFSET_Y
+]]>
+        </Variation>
+        <Variation name = "alphaMapGradient_cosOffsetY" groups="base alphaMap">
+<![CDATA[
+    #define ALPHA_MAP
+    #define ALPHA_GRADIENT
+    #define COS_OFFSET_Y
+]]>
+        </Variation>
+        <Variation name = "alphaMapGradient_cosOffsetY_scaleByLife" groups="base alphaMap scale">
+<![CDATA[
+    #define ALPHA_MAP
+    #define ALPHA_GRADIENT
+    #define COS_OFFSET_Y
+    #define SCALE_BY_LIFE
+]]>
+        </Variation>
+        <Variation name = "scaleByLife" groups="base scale">
+<![CDATA[
+    #define SCALE_BY_LIFE
+]]>
+        </Variation>
+        <Variation name = "rotateByLife_cosOffsetY" groups="base rotate">
+<![CDATA[
+    #define ROTATE_BY_LIFE
+    #define COS_OFFSET_Y
+]]>
+        </Variation>
+        <Variation name = "rotateByLife_cosOffsetY_alphaMapGradient" groups="base rotate alphaMap">
+<![CDATA[
+    #define ROTATE_BY_LIFE
+    #define COS_OFFSET_Y
+    #define ALPHA_MAP
+    #define ALPHA_GRADIENT
+]]>
+        </Variation>
+        <Variation name = "scaleByTexture" groups="base">
+<![CDATA[
+    #define SCALE_BY_TEXTURE
+]]>
+        </Variation>
+        <Variation name = "scaleByTexture_alphaMap" groups="base alphaMap">
+<![CDATA[
+    #define SCALE_BY_TEXTURE
+    // alpha is loaded from alphaMap
+    #define ALPHA_MAP
+]]>
+        </Variation>
+        <Variation name = "scaleByTexture_alphaMap_keepNormals" groups="base alphaMap">
+<![CDATA[
+    #define SCALE_BY_TEXTURE
+    // alpha is loaded from alphaMap
+    #define ALPHA_MAP
+    #define KEEP_NORMALS
+]]>
+        </Variation>
+        <Variation name = "scaleByTexture_verticalOffsetCut" groups="base">
+<![CDATA[
+    // get scale from shapeArray[2]
+    #define SCALE_BY_TEXTURE
+    // cut alpha by verticalOffset (offset of the vertices by Y locally)
+    #define VERTICALOFFSET_CUT
+]]>
+        </Variation>
+        <Variation name = "scaleByTexture_verticalOffsetCut_alphaMap" groups="base alphaMap">
+<![CDATA[
+    // get scale from shapeArray[2]
+    #define SCALE_BY_TEXTURE
+    // cut alpha by verticalOffset (offset of the vertices by Y locally)
+    #define VERTICALOFFSET_CUT
+    // alpha is loaded from alphaMap
+    #define ALPHA_MAP
+]]>
+        </Variation>
+        <Variation name = "scaleByTexture_verticalOffsetCut_alphaMap_keepNormals" groups="base alphaMap">
+<![CDATA[
+    // get scale from shapeArray[2]
+    #define SCALE_BY_TEXTURE
+    // cut alpha by verticalOffset (offset of the vertices by Y locally)
+    #define VERTICALOFFSET_CUT
+    // alpha is loaded from alphaMap
+    #define ALPHA_MAP
+    #define KEEP_NORMALS
+]]>
+        </Variation>
+        <Variation name = "subUV" groups="base subUV">
+<![CDATA[
+    #define SUBUV_MOVIE_HORIZONTAL
+]]>
+        </Variation>
+        <Variation name = "subUV_scaleByLife" groups="base subUV scale">
+<![CDATA[
+    #define SCALE_BY_LIFE
+    #define SUBUV_BY_LIFE_HORIZONTAL
+]]>
+        </Variation>
+        <Variation name = "subUV_scaleByLife_alphaMap" groups="base subUV scale alphaMap">
+<![CDATA[
+    #define SCALE_BY_LIFE
+    #define SUBUV_BY_LIFE_HORIZONTAL
+    // alpha is loaded from alphaMap
+    #define ALPHA_MAP
+]]>
+        </Variation>
+        <Variation name = "subUV_scaleByLife_cosOffsetY" groups="base subUV scale">
+<![CDATA[
+    #define SCALE_BY_LIFE
+    #define SUBUV_BY_LIFE_HORIZONTAL
+    #define COS_OFFSET_Y
+]]>
+        </Variation>
+        <Variation name = "subUV_scaleByLife_cosOffsetY_alphaMap" groups="base subUV scale alphaMap">
+<![CDATA[
+    #define SCALE_BY_LIFE
+    #define SUBUV_BY_LIFE_HORIZONTAL
+    #define COS_OFFSET_Y
+    // alpha is loaded from alphaMap
+    #define ALPHA_MAP
+]]>
+        </Variation>
+        <Variation name = "pivotOffsetY_jigglingX" groups="base">
+<![CDATA[
+    #define PIVOT_OFFSET_Y
+    #define JIGGLING_X
+]]>
+        </Variation>
+        <Variation name = "pivotOffsetY_jigglingX_alphaMap" groups="base alphaMap">
+<![CDATA[
+    #define PIVOT_OFFSET_Y
+    #define JIGGLING_X
+    // alpha is loaded from alphaMap
+    #define ALPHA_MAP
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+// use alpha_test to toggle visibility 
+#if !defined(ALPHA_BLENDED)
+    #define ALPHA_TESTED
+#endif
+/*
+    scrollPosition.x - position of the elements (scrolling time based parameter)
+    scrollPosition.y - surface_source (index 0,1,2,...)
+    scrollPosition.z - surface_target (index 0,1,2,...)
+    scrollPosition.w - blending between surface_source and surface_target
+*/
+float4 scrollPosition;
+float4 prevScrollPosition; // same as scrollPosition, but from previous time step!
+/*
+    fadeProgress.x - FadeIN:    start = -1.0 end = 1.0
+    fadeProgress.y - FadeOUT:   start = 1.0 end = -1.0
+
+    Fully Visible       fadeProgress.x = 1.0        "1.0 1.0 0.0 0.0"
+                        fadeProgress.y = 1.0
+    Fully Invisible     fadeProgress.x = -1.0       "-1.0 -1.0 0.0 0.0"
+                        fadeProgress.y = -1.0
+*/
+float4 fadeProgress;
+/*
+    visibilityX.xy - cut visibility based on objectspace position.x
+    visibilityY.xy - cut visibility based on objectspace position.y
+    visibilityZ.xy - cut visibility based on objectspace position.z
+*/
+float2 visibilityX;
+float2 visibilityY;
+float2 visibilityZ;
+/*
+    density - 0 .. 1 overall density driven through densityMask.r texture
+*/
+float density;
+/*
+    verticalOffset - offset of the vertices by Y
+*/
+float verticalOffset;
+#if defined(SUBUV_MOVIE_HORIZONTAL)
+    /*
+        subUVspeed - subUV animation speed
+    */
+    float subUVspeed;
+#endif
+#if defined(SUBUV_MOVIE_HORIZONTAL) || defined(SUBUV_BY_LIFE_HORIZONTAL)
+    /*
+        subUVelements.x - amount of horizontal subUV elements
+        subUVelements.y - amount of vertical subUV elements
+    */
+    float2 subUVelements;
+#endif
+#if defined(SCALE_BY_LIFE)
+    /*
+        sizeScale.x - geometry size at the beginning
+        sizeScale.y - geometry size at the end
+    */
+    float2 sizeScale;
+#endif
+#if defined(ROTATE_BY_LIFE)
+    /*
+        rotateSpeed - rotation speed, 
+            rotation meant to be happening around the axis perpendicular to the motion direction
+    */
+    float rotateSpeed;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "VS_INPUT">
+<![CDATA[
+    float2 gIndex;
+    float2 gPrevIndex;
+    float2 gIndexStatic;
+    float4 gPosition;
+    float4 gPrevPosition;
+    float4 gOrient;
+    float4 gPrevOrient;
+    float4 gScale;
+    float4 gPrevScale;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+/*
+    shapeArray[0] - rgb   = position.xyz
+                    alpha = binary visibility
+    shapeArray[1] - rgba  = quaternion.xyzw rotation
+    if SCALE_BY_TEXTURE:
+    shapeArray[2] - rgb   = scale.xyz
+*/
+sampler2DArray shapeArray;
+sampler2D densityMask;
+#if defined(ALPHA_MAP)
+    sampler2D alphaMap;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="LIB_FUNCTION_VS">
+<![CDATA[
+// Custom vertex functions
+// Houdini fitRange equivalent
+float fitRange( float mIn,float mOldMin,float mOldMax ,float mNewMin ,float mNewMax ){
+    return (mNewMin + (mIn - mOldMin) * (mNewMax  - mNewMin ) / (mOldMax  - mOldMin));
+}
+// simplifed smoothstep 
+// remaps the values of x between a and b to the range [0, 1], and clamps values outside this range
+float linearstep(float a, float b, float x){
+    return saturate((x - a)/(b - a)); 
+}
+float4 eulerToQuaternion(float rx, float ry, float rz){
+    float cy = cos(rx * 0.5);
+    float sy = sin(rx * 0.5);
+    float cp = cos(ry * 0.5);
+    float sp = sin(ry * 0.5);
+    float cr = cos(rz * 0.5);
+    float sr = sin(rz * 0.5);
+    float4 q;
+    q.w = cy * cp * cr + sy * sp * sr;
+    q.x = cy * cp * sr - sy * sp * cr;
+    q.y = sy * cp * sr + cy * sp * cr;
+    q.z = sy * cp * cr - cy * sp * sr;
+    return q;
+}
+float4 eulerToQuaternionRX(float rx){
+    float4 q;
+    q.w = cos(rx*0.5);
+    q.x = 0;
+    q.y = 0;
+    q.z = sin(rx*0.5);
+    return q;
+}
+float4 eulerToQuaternionRY(float ry){
+    float4 q;
+    q.w = cos(ry*0.5);
+    q.x = 0;
+    q.y = sin(ry*0.5);
+    q.z = 0;
+    return q;
+}
+float4 eulerToQuaternionRZ(float rz){
+    float4 q;
+    q.w = cos(rz*0.5);
+    q.x = sin(rz*0.5);
+    q.y = 0;
+    q.z = 0;
+    return q;
+}
+float4 QuaternionMultiply(float4 a, float4 b){
+    float4 q;
+    q.w = a.w*b.w - a.x*b.x - a.y*b.y - a.z*b.z;
+    q.x = a.w*b.x + a.x*b.w + a.y*b.z - a.z*b.y;
+    q.y = a.w*b.y - a.x*b.z + a.y*b.w + a.z*b.x;
+    q.z = a.w*b.z + a.x*b.y - a.y*b.x + a.z*b.w;
+    return q;
+}
+float3 getQuaternionPos( float4 mQr, float3 mPos ){
+    float3 mQ = float3(mQr.x,mQr.y,mQr.z);
+    float3 mDeformPos = mPos + 2.0 * cross( mQ, cross(mQ, mPos) + mQr.w*mPos );
+    return mDeformPos;
+}
+float2 getIndex( VS_INPUT In, float mX, float mY, float timeBasedPosition) {
+    float2 pIndex = float2(0.0,0.0);
+    // fixed speed
+    float mTime = timeBasedPosition;
+    // Calculate Index
+    float ptnum = 32767*In.normal.w; // 0,1,2 ... 32767
+    pIndex.y = (floor(ptnum / mX)+0.5)/mY;
+#if defined( RAND_TIME_OFFSET )
+    // add randomness +/- 15% from original mTime
+    float2 mPlayTime = float2(timeBasedPosition, timeBasedPosition);
+    mPlayTime.x -= 0.15*timeBasedPosition;
+    mPlayTime.y += 0.15*timeBasedPosition;
+    float mRandomValue = frac(sin(pIndex.y + 0.64721) * 135632.63);
+    mTime = lerp( mPlayTime.x, mPlayTime.y, mRandomValue );
+#endif
+    pIndex.x = frac(mTime+(ptnum+0.5)/mX);
+    return pIndex;
+}
+float2 getIndexStatic(VS_INPUT In, float mX, float mY){
+    float2 pIndex = float2(0.0,0.0);
+    // Calculate Index
+    float ptnum = 32767*In.normal.w; // 0,1,2 ... 32767
+    pIndex.y = (floor(ptnum / mX)+0.5)/mY;
+    pIndex.x = frac((ptnum+0.5)/mX);
+    return pIndex;
+}
+float4 getPositionTex(float2 pIndex, float4 scrollPosition) {
+#if defined( SCALE_BY_TEXTURE )
+    float mSourceId = 3*scrollPosition.y;
+    float mTargetId = 3*scrollPosition.z;
+#else
+    float mSourceId = 2*scrollPosition.y;
+    float mTargetId = 2*scrollPosition.z;
+#endif
+    float4 position = tex2Dlod( shapeArray, float3(pIndex.xy,mSourceId), 0);
+    if (scrollPosition.w > 0) {
+        position = lerp(position, tex2Dlod(shapeArray, float3(pIndex.xy,mTargetId), 0), scrollPosition.w);
+    }
+    return position;
+}
+float4 getOrientTex(float2 pIndex, float4 scrollPosition) {
+#if defined( SCALE_BY_TEXTURE )
+    float mSourceId = 3*scrollPosition.y + 1;
+    float mTargetId = 3*scrollPosition.z + 1;
+#else
+    float mSourceId = 2*scrollPosition.y + 1;
+    float mTargetId = 2*scrollPosition.z + 1;
+#endif
+    float4 orient = tex2Dlod( shapeArray, float3(pIndex.xy,mSourceId), 0);
+    if (scrollPosition.w > 0) {
+        orient = lerp(orient, tex2Dlod(shapeArray, float3(pIndex.xy,mTargetId), 0), scrollPosition.w);
+    }
+    return orient;
+}
+float4 getScaleTex(float2 pIndex, float4 scrollPosition) {
+#if defined( SCALE_BY_TEXTURE )
+    float mSourceId = 3*scrollPosition.y + 2;
+    float mTargetId = 3*scrollPosition.z + 2;
+    float4 scale = tex2Dlod(shapeArray, float3(pIndex.xy,mSourceId), 0);
+    if (scrollPosition.w > 0) {
+        scale = lerp(scale, tex2Dlod(shapeArray, float3(pIndex.xy,mTargetId), 0), scrollPosition.w);
+    }
+    return scale;
+#else
+    return float4(1.0,1.0,1.0,1.0);
+#endif
+}
+//
+// the same vertex shader code which is re-used twice in GET_POSITION_VS and GET_PREV_POSITION_VS
+// only with different values
+//
+float3 getCustomPositionVS( VS_INPUT    In,
+                      ObjectParameters& object,
+                                float   mScrollPosition, 
+                                float2  mIndex, 
+                                float4  mPosition,
+                                float4  mOrient,
+                                float4  mScale ){
+    float4 localPosition = mPosition;
+    float4 localOrient   = mOrient;
+    float4 localScale    = mScale;
+    // offset vertices vertical locally
+    float3 mInitialPosition = In.position.xyz;
+    mInitialPosition.y += object.verticalOffset;
+#if defined( JIGGLING_X )
+    // add extra rotation (some kind of noise) around Z axis using Quaternion
+    float4 mRX = eulerToQuaternionRX(0.07*cos(24.271*mScrollPosition+16*(mIndex.x+mIndex.y)));
+    localOrient = QuaternionMultiply(localOrient,mRX);
+#endif
+#if defined( ROTATE_BY_LIFE )
+    // rotate around moving axis 
+    float rotation = -object.rotateSpeed*mIndex.x+mIndex.y;
+    float4 mRX = eulerToQuaternionRX(rotation);
+    localOrient = QuaternionMultiply(localOrient,mRX);
+#endif
+#if defined( PIVOT_OFFSET_Y )
+    // offset position by Y before rotation
+    mInitialPosition.y += localPosition.y;
+    localPosition.y = 0;
+#endif
+#if defined( SCALE_BY_TEXTURE )
+    mInitialPosition *= localScale.xyz;
+#endif
+#if defined( SCALE_BY_LIFE )
+    mInitialPosition *= fitRange(mIndex.x,0,1,object.sizeScale.x,object.sizeScale.y);
+#endif
+#if defined( COS_OFFSET_Y )
+    mInitialPosition.y += 0.1*mIndex.x*cos(24.271 * mScrollPosition - 16*(mIndex.x+mIndex.y));
+#endif
+    // apply quaternion rotation
+    float3 mDeformed = getQuaternionPos( localOrient, mInitialPosition );
+    // apply translation
+    mDeformed += localPosition.xyz;
+    return mDeformed;
+}
+float3 getCustomVectorVS( VS_INPUT    In,
+                      ObjectParameters& object,
+                                float   mScrollPosition, 
+                                float3  mVector,
+                                float2  mIndex, 
+                                float4  mPosition,
+                                float4  mOrient,
+                                float4  mScale ){
+    float4 localPosition = mPosition;
+    float4 localOrient   = mOrient;
+    float4 localScale    = mScale;
+#if defined( ROTATE_BY_LIFE )
+    // rotate around moving axis 
+    float rotation = -object.rotateSpeed*mIndex.x+mIndex.y;
+    float4 mRX = eulerToQuaternionRX(rotation);
+    localOrient = QuaternionMultiply(localOrient,mRX);
+#endif
+    // apply quaternion rotation
+    float3 mDeformed = getQuaternionPos( localOrient, mVector );
+    return mDeformed;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FILL_VERTEX_INPUT_VS">
+<![CDATA[
+    int2 texSize    = tex2DSize(shapeArray,0);
+    float mX = float(texSize.x);
+    float mY = float(texSize.y);
+    In.gIndex        = getIndex(In, mX, mY, object.scrollPosition.x).xy;
+    In.gPrevIndex    = getIndex(In, mX, mY, object.prevScrollPosition.x).xy;
+    In.gIndexStatic  = getIndexStatic(In, mX, mY).xy;
+    In.gPosition     = getPositionTex(In.gIndex, object.scrollPosition);
+    In.gPrevPosition = getPositionTex(In.gPrevIndex, object.prevScrollPosition);
+    In.gOrient       = getOrientTex(In.gIndex, object.scrollPosition);
+    In.gPrevOrient   = getOrientTex(In.gPrevIndex, object.prevScrollPosition);
+    In.gScale        = getScaleTex(In.gIndex, object.scrollPosition);
+    In.gPrevScale    = getScaleTex(In.gPrevIndex, object.prevScrollPosition);
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+float  mPositionYlocal      : TEXCOORDn;
+#if defined( PIVOT_OFFSET_Y )
+    float  mPositionYglobal : TEXCOORDn;
+#endif
+float  visibility           : TEXCOORDn;
+float2 pIndex               : TEXCOORDn;
+float2 albedoMapTexCoords2  : TEXCOORDn;
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_DEFAULT_TEXCOORDS_VS">
+<![CDATA[
+#if defined( SUBUV_BY_LIFE_HORIZONTAL )
+    float mXsize = object.subUVelements.x;
+    float mTime = In.gIndex.x * mXsize;
+    float mFrame = floor ( fmod( mTime,  mXsize ) );
+    // --------
+    float2 mOutgoingUV = convertDefaultTexCoords( In, object, In.texCoords0.xy );
+    mOutgoingUV.x /= mXsize;
+    mOutgoingUV.x += (mFrame/mXsize);
+    return mOutgoingUV;
+#endif
+#if defined( SUBUV_MOVIE_HORIZONTAL )
+    float mXsize = object.subUVelements.x;
+    float mTime  = object.scrollPosition.x * object.subUVspeed;
+    float mFrame = floor ( fmod( mTime,  mXsize ) );
+    // --------
+    float2 mOutgoingUV = convertDefaultTexCoords( In, object, In.texCoords0.xy );
+    mOutgoingUV.x += (mFrame/mXsize);
+    return mOutgoingUV;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_POSITION_VS">
+<![CDATA[
+    return getCustomPositionVS(In, object, object.scrollPosition.x, In.gIndex, In.gPosition, In.gOrient, In.gScale );
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_PREV_POSITION_VS">
+<![CDATA[
+    return getCustomPositionVS(In, object, object.prevScrollPosition.x, In.gPrevIndex, In.gPrevPosition, In.gPrevOrient, In.gPrevScale );
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_WORLD_POSE_VS">
+<![CDATA[
+    prevWorldPosition = mul(object.prevModelMatrix, float4(prevPosition, 1));
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_NORMAL_VS">
+<![CDATA[
+#if !defined( KEEP_NORMALS )
+    return getCustomVectorVS(In, object, object.scrollPosition.x, In.normal.xyz, In.gIndex, In.gPosition, In.gOrient, In.gScale );
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_TANGENT_VS">
+<![CDATA[
+#if !defined( KEEP_NORMALS )
+    return getCustomVectorVS(In, object, object.scrollPosition.x, In.tangent.xyz, In.gIndex, In.gPosition, In.gOrient, In.gScale );
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_BITANGENT_VS">
+<![CDATA[
+#if !defined( KEEP_NORMALS )
+    return cross(getNormal(In, object), getTangent(In, object))*In.tangent.w;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_END">
+<![CDATA[
+    Out.mPositionYlocal = In.position.y;
+#if defined( PIVOT_OFFSET_Y )
+    Out.mPositionYglobal = position.y;
+#endif
+    Out.pIndex     = In.gIndex;
+    float mVis = 1.0;
+    {
+        float mVis1 = position.x < object.visibilityX.x;
+        float mVis2 = position.x > object.visibilityX.y;
+        float mVis3 = position.y < object.visibilityY.x;
+        float mVis4 = position.y > object.visibilityY.y;
+        float mVis5 = position.z < object.visibilityZ.x;
+        float mVis6 = position.z > object.visibilityZ.y;
+        mVis = mVis1*mVis2*mVis3*mVis4*mVis5*mVis6;
+    }
+    if (In.gPosition.w < 1){
+        Out.position = float4(0,0,0,-1);
+    }
+    {
+        float mFadeIN    = object.fadeProgress.x > In.gIndex.r;
+        float mFadeOUT   = object.fadeProgress.y < In.gIndex.r;
+        float mFadeLeft  = object.fadeProgress.z > In.gIndex.g;
+        float mFadeRight = object.fadeProgress.w < In.gIndex.g;
+        float mAlphaFinal = mFadeIN*mFadeOUT*mFadeLeft*mFadeRight;
+        if ( 0 == mAlphaFinal){
+            Out.position = float4(0,0,0,-1);
+        }
+    }
+    Out.visibility = mVis;
+    Out.albedoMapTexCoords2 = In.gIndexStatic.xy;
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+    float mDensity = linearstep( object.density+0.025,object.density-0.025, tex2D( densityMask, In.vs.albedoMapTexCoords2).r );
+    // vertical offset alpha cut
+    float mVerticalCut = 1.0;
+#if defined( VERTICALOFFSET_CUT )
+    mVerticalCut = In.vs.mPositionYlocal > -object.verticalOffset;
+#endif
+#if defined( PIVOT_OFFSET_Y )
+    mVerticalCut = In.vs.mPositionYglobal > -object.verticalOffset;
+#endif   
+#ifdef ALBEDO_MAP
+    float mAlpha = tex2D(baseMap, ALBEDO_MAP_TEXCOORDS).a;
+#else
+    float mAlpha = 1.0f;
+#endif
+    float mAlphaFinal = saturate( mAlpha*In.vs.visibility*mDensity*mVerticalCut );
+#if defined(ALPHA_MAP)
+    float mAlphaMap = tex2D(alphaMap, ALBEDO_MAP_TEXCOORDS).r;
+    #if defined(ALPHA_GRADIENT)
+        float alphaShift = 0.025;
+        // apply gradient only for uv0.x > 0
+        if (ALBEDO_MAP_TEXCOORDS.x > 0.0){ 
+            mAlphaFinal = saturate((-1 + mAlphaMap + mAlphaFinal - alphaShift) / alphaShift);
+        }
+    #else
+        mAlphaFinal *= mAlphaMap;
+    #endif
+#endif
+    alpha = mAlphaFinal;
+#if defined(ALPHA_BLENDED)
+    reflectingLightingScale = alpha;
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

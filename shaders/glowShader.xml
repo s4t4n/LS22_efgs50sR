@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "lightControl" target = "lightControl" type = "float"  group="base"   defaultValue = "1.0"              minValue = "0.0"             maxValue = "10"/>
+        <Parameter name = "sliderPos"    target = "sliderPos"    type = "float"  group="slider" defaultValue = "1.0"              minValue = "0"               maxValue = "1"/>
+        <Parameter name = "colorScale"   target = "colorScale"   type = "float3" group="color"  defaultValue = "1.0 1.0 1.0"      minValue = "0 0 0"           maxValue = "1 1 1"/>
+        <Parameter name = "baseColor"    target = "baseColor"    type = "float4" group="mask"   defaultValue = "0.01 0.01 0.01 0" minValue = "0 0 0 0"         maxValue = "1 1 1 1"/>
+        <Parameter name = "emitColor"    target = "emitColor"    type = "float4" group="mask"   defaultValue = "1.0 0.0 0.0 0"    minValue = "0 0 0 0"         maxValue = "1 1 1 1"/>
+        <Parameter name = "blinkOffset"  target = "blinkOffset"  type = "float4" group="blink"  defaultValue = "1.0 0.0 1.0 0.0"  minValue = "-10 -10 -10 -10" maxValue = "10 10 10 10"/>
+        <Parameter name = "blinkSpeed"   target = "blinkSpeed"   type = "float"  group="blink"  defaultValue = "7"                minValue = "0"               maxValue = "50"/>
+        <Parameter name = "pulseSpeed"   target = "pulseSpeed"   type = "float"  group="pulse"  defaultValue = "3"                minValue = "0"               maxValue = "50"/>
+    </Parameters>
+    <UvUsages/>
+    <Textures>
+        <Texture name = "mEmissiveMap"  group="emissiveMap"  defaultColorProfile = "sRGB" defaultFilename = "../shared/materialHolders/defaultGlow_diffuse.png"/>
+        <Texture name = "mExtraBaseMap" group="extraBaseMap" defaultColorProfile = "sRGB" defaultFilename = "../shared/default_diffuse.png"/>
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="uv1" group="slider"/>
+        <VertexAttribute name="uv1" group="seconduv"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name = "alphaTestDisable_extraBaseMap" groups="base extraBaseMap">
+<![CDATA[
+/*
+    // DEFAULT BEHAVIOUR
+    if uv.x > 0 uses baseMap.rgba - for glowing
+
+    baseMap.rgb - color
+    baseMap.w   - intensity
+    extraBaseMap.rgb - second Base Map
+*/
+    #define ALPHA_TEST_DISABLE
+    #define EXTRA_BASE_MAP
+]]>
+        </Variation>
+        <Variation name = "alphaTestDisable" groups="base">
+<![CDATA[
+/*
+    // DEFAULT BEHAVIOUR
+    if uv.x > 0 uses baseMap.rgba - for glowing
+
+    baseMap.rgb - color
+    baseMap.w   - intensity
+*/
+    #define ALPHA_TEST_DISABLE
+]]>
+        </Variation>
+        <Variation name = "alphaTestDisable_secondUV" groups="base seconduv">
+<![CDATA[
+    #define ALPHA_TEST_DISABLE
+    #define SECONDUV
+    #define SECONDUV_EMISSIVE_BASEMAP_ALPHA
+]]>
+        </Variation>
+        <Variation name = "customEmissiveMap" groups="base emissiveMap">
+<![CDATA[
+/*
+    if uv.x > 0 uses mEmissiveMap.rgba for glowing
+
+    mEmissiveMap.rgb - color
+    mEmissiveMap.w   - intensity ( can be as gradient)
+*/
+    #define CUSTOM_EMISSIVE_MAP
+]]>
+        </Variation>
+        <Variation name = "customEmissiveMap_secondUV" groups="base emissiveMap seconduv">
+<![CDATA[
+    #define CUSTOM_EMISSIVE_MAP
+    #define SECONDUV
+    #define SECONDUV_EMISSIVEMAP
+]]>
+        </Variation>
+        <Variation name = "slider" groups="base slider">
+<![CDATA[
+/*
+    control intensity based on sliderPos // uv1.x <= object.sliderPos;
+*/
+    #define SLIDER
+]]>
+        </Variation>
+        <Variation name = "slider_customEmissiveMap" groups="base slider emissiveMap">
+<![CDATA[
+    #define SLIDER
+    #define CUSTOM_EMISSIVE_MAP
+]]>
+        </Variation>
+        <Variation name = "slider_pulse" groups="base seconduv pulse">
+<![CDATA[
+    #define SLIDER
+    #define SLIDER_PULSE
+]]>
+        </Variation>
+        <Variation name = "additive_colorScale" groups="base color">
+<![CDATA[
+    #define ADDITIVE_BLENDING
+    #define COLOR_SCALE
+]]>
+        </Variation>
+        <Variation name = "additive_colorScale_uvGradient" groups="base color">
+<![CDATA[
+    #define ADDITIVE_BLENDING
+    #define COLOR_SCALE
+    #define UV_GRADIENT
+]]>
+        </Variation>
+        <Variation name = "additive_colorScale_fresnel_pulsating" groups="base color pulse">
+<![CDATA[
+    #define ADDITIVE_BLENDING
+    #define COLOR_SCALE
+    #define FRESNEL
+    #define PULSATING
+]]>
+        </Variation>
+        <Variation name = "additive_billboard_pulsating" groups="base pulse">
+<![CDATA[
+    #define ADDITIVE_BLENDING
+    #define PULSATING
+    #define BILLBOARD
+]]>
+        </Variation>
+        <Variation name = "staticLight" groups="base blink mask">
+<![CDATA[
+/*
+    if baseColor.w > 0  - overwrite baseColor
+    if emitColor.w > 0  - overwrite emissiveColor
+    if uv.y < -1        - blinking
+*/
+    #define STATIC_LIGHT
+]]>
+        </Variation>
+        <Variation name = "baseMap_colorScale_blink" groups="base color blink">
+<![CDATA[
+    #define COLOR_SCALE
+    #define BLINK
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="CONFIG_DEFINES">
+<![CDATA[
+#if defined( ADDITIVE_BLENDING )
+    #if defined( ALPHA_BLENDED )  // only for alpha blended materials
+        #undef FOG_INSCATTERING   // only apply the fog extinction
+        #define DISABLE_SPECULAR  // also remove specular
+    #endif
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+#if defined( CUSTOM_EMISSIVE_MAP )
+    sampler2D mEmissiveMap;
+#endif
+#if defined( EXTRA_BASE_MAP )
+    sampler2D mExtraBaseMap;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+#if defined( ALPHA_TEST_DISABLE )
+    #undef ALPHA_TESTED
+#endif
+    float lightControl; // glowing intensity, can go above 1
+#if defined( SLIDER )
+    float sliderPos; // 0..1 positin of the slider
+#endif
+#if defined( COLOR_SCALE )
+    float3 colorScale; // extra color control
+#endif
+#if defined( STATIC_LIGHT )
+    float4 baseColor;
+    float4 emitColor;
+#endif
+#if defined( STATIC_LIGHT ) || defined( BLINK )
+    float4 blinkOffset;
+    float  blinkSpeed;
+#endif
+#if defined( PULSATING ) || defined( SLIDER_PULSE )
+    float pulseSpeed;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_WORLD_POSE_VS">
+<![CDATA[
+#if defined( BILLBOARD )
+{
+    // this assumes z = 0
+    float3 camToPos = float3(object.modelMatrix[0][3], object.modelMatrix[1][3], object.modelMatrix[2][3]);
+    float3 upVector = float3(object.modelMatrix[0][1], object.modelMatrix[1][1], object.modelMatrix[2][1]);
+    float3 sideVector = normalize(cross(camToPos, upVector));
+    // Allow scaling
+    sideVector *= length(float3(object.modelMatrix[0][0], object.modelMatrix[1][0], object.modelMatrix[2][0]));
+    worldPosition = sideVector*In.position.x + upVector*In.position.y + camToPos;
+    prevWorldPosition = worldPosition;
+}
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+#if defined( SLIDER ) || defined( SECONDUV )
+    float2 albedoMapTexCoord2 : TEXCOORDn;
+#endif
+    float mVisScale : TEXCOORDn;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+#if defined( SLIDER ) || defined( SECONDUV )
+    Out.albedoMapTexCoord2 = convertDefaultTexCoords( In, object, In.texCoords1.xy );
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_END">
+<![CDATA[
+    Out.mVisScale = 1.0;
+    float pi = 3.14159265359;
+#if defined( PULSATING )
+    Out.mVisScale = cos( object.pulseSpeed * cTime_s )* 0.5 + 0.5; // 0..1
+#endif
+#if defined( STATIC_LIGHT )
+    // the same formula from vehicleShader
+    if (Out.defaultTexCoords.y < -1.0){
+        Out.mVisScale = saturate(cos( object.blinkSpeed*object.blinkOffset.z*(cTime_s - object.blinkOffset.y) + 2*pi*object.blinkOffset.x ) + 0.2);
+    }
+#endif
+#if defined( BLINK )
+    Out.mVisScale = saturate(cos( object.blinkSpeed*object.blinkOffset.z*(cTime_s - object.blinkOffset.y) + 2*pi*object.blinkOffset.x ) + 0.2);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "LIB_FUNCTION_FS">
+<![CDATA[
+// simplifed smoothstep
+// remaps the values of x between a and b to the range [0, 1], and clamps values outside this range
+float linearstepFS(float a, float b, float x){
+    return saturate((x - a)/(b - a));
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+    float4 gEmissiveColor;
+    float3 gDiffuseColor;
+    float  gAlpha;
+    float  lightControl;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "START_FS">
+<![CDATA[
+    globals.gEmissiveColor = float4(1.0,1.0,1.0,1.0);
+    globals.gDiffuseColor  = float3(1.0,1.0,1.0);
+    globals.gAlpha = 1.0;
+    globals.lightControl = object.lightControl;
+    // Environment Conditions control
+    globals.lightControl *= object.visibility;
+#if defined( ALBEDO_MAP )
+    float4 mBaseMap = tex2D(baseMap, In.vs.defaultTexCoords).xyzw;
+    #if defined( SECONDUV_EMISSIVE_BASEMAP_ALPHA )
+        // load baseMap.w from uv1
+        // than emissiveColor.w (emisive intensity) uses alpha as glowing mask
+        mBaseMap = tex2D(baseMap, In.vs.albedoMapTexCoord2).w;
+    #endif
+    globals.gEmissiveColor = mBaseMap.rgba;
+    globals.gDiffuseColor  = mBaseMap.rgb;
+    #if defined( STATIC_LIGHT )
+        globals.gDiffuseColor.rgb  = mBaseMap.rgb;
+        {
+            float mBlend = saturate(globals.lightControl*In.vs.mVisScale);
+            if (object.baseColor.w>0){
+                // modify baseColor when it glowing (because baseColor is different from emissiveColor)
+                globals.gDiffuseColor.rgb  = lerp(object.baseColor.rgb, float3(0.01,0.01,0.01), mBlend);
+            }
+            globals.gEmissiveColor.xyzw = mBaseMap.xyzw;
+            if (object.emitColor.w>0){
+                globals.gEmissiveColor.rgb = object.emitColor.rgb; // owerwrite missive color
+                // modify baseColor when it glowing (because baseColor is different from emissiveColor)
+                // take in account previously modified baseColor (if it happend)
+                globals.gDiffuseColor.rgb  = lerp(globals.gDiffuseColor.rgb, float3(0.01,0.01,0.01), mBlend);
+            }
+
+            // mesh completely black while value is below -1 -> used to shut display completely off independent of diffuse map
+            if (object.lightControl<=-1){
+                globals.gDiffuseColor.rgb = float3(0.0, 0.0, 0.0);
+                globals.gEmissiveColor.xyzw = float4(0.0, 0.0, 0.0, 0.0);
+            }
+        }
+    #else
+        // DEFAULT BEHAVIOUR
+        globals.gEmissiveColor.xyzw = mBaseMap.xyzw;
+        globals.gDiffuseColor.rgb  = mBaseMap.rgb;
+    #endif
+#endif
+#if defined( CUSTOM_EMISSIVE_MAP )
+    #if defined( SECONDUV_EMISSIVEMAP )
+        globals.gEmissiveColor.xyzw = tex2D(mEmissiveMap, In.vs.albedoMapTexCoord2).xyzw;
+    #else
+        globals.gEmissiveColor.xyzw = tex2D(mEmissiveMap, In.vs.defaultTexCoords).xyzw;
+    #endif
+#endif
+#if defined( COLOR_SCALE )
+    globals.gEmissiveColor.xyz *= object.colorScale.rgb;
+#endif
+#if defined( SLIDER )
+    float mask = 1.0;
+    #if defined( SLIDER_PULSE )
+        float time = cos( object.pulseSpeed * cTime_s )* 0.5 + 0.5;
+        mask = linearstepFS(time, time+0.05, 1-In.vs.albedoMapTexCoord2.x);
+    #else
+        mask = saturate(In.vs.albedoMapTexCoord2.x <= object.sliderPos);
+        globals.gAlpha = mask;
+    #endif
+    globals.gEmissiveColor.w *= mask;
+#endif
+#if defined( STATIC_LIGHT ) || defined( BLINK )
+    globals.gEmissiveColor.w *= In.vs.mVisScale;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined( ALBEDO_MAP )
+if ( In.vs.defaultTexCoords.x > 0.0 ){
+    #if defined( STATIC_LIGHT )
+        // overwrite the diffuse
+        diffuseColor.rgb = globals.gDiffuseColor.rgb;
+    #endif
+}
+    #if defined( EXTRA_BASE_MAP )
+        if (!(globals.lightControl>0)){
+            diffuseColor.rgb = tex2D(mExtraBaseMap, In.vs.defaultTexCoords).xyz;
+        }
+    #endif
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="EMISSIVE_FS">
+<![CDATA[
+#if defined( FRESNEL )
+    globals.gEmissiveColor.w *= getFresnel( facing, 0.15 , 4.0 );
+#endif
+// ---------------------------------------------
+if ( In.vs.defaultTexCoords.x > 0.0 ){
+#if defined(EMISSIVE_MAP)
+    emissiveColor.rgb *= globals.gEmissiveColor.xyz;
+#else
+    // DEFAULT BEHAVIOUR
+    emissiveColor.rgb = globals.gEmissiveColor.xyz;
+#endif
+#if defined( UV_GRADIENT )
+    emissiveColor.rgb = saturate(In.vs.defaultTexCoords.y*In.vs.defaultTexCoords.y*In.vs.defaultTexCoords.y);
+    emissiveColor.rgb *= globals.gEmissiveColor.xyz;
+#endif
+    float mLightControl = globals.lightControl;
+#if GPU_PROFILE < GPU_PROFILE_MEDIUM
+    mLightControl = saturate(mLightControl);
+#endif
+    emissiveColor *= mLightControl;
+    emissiveColor *= globals.gEmissiveColor.w;
+}
+// ---------------------------------------------
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GLOSS_COLOR_FS">
+<![CDATA[
+#if defined( DISABLE_SPECULAR )
+    #if defined( SPECULAR )
+        #undef SPECULAR
+    #endif
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined(ALPHA_BLENDED) || defined(ALPHA_TESTED)
+    alpha *= globals.gAlpha;
+#endif
+#if defined( PULSATING )
+    alpha = lerp(alpha, 2*alpha, In.vs.mVisScale );
+#endif
+#if defined( ALPHA_BLENDED )
+    reflectingLightingScale = alpha;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="FINAL_POS_FS">
+<![CDATA[
+#if defined( ADDITIVE_BLENDING )
+    #if defined(ALPHA_BLENDED)
+        oColor.a = 0.0;
+    #endif
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

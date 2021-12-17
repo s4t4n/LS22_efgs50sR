@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "RDT"         target = "RDT"         type = "float4" group="base"    defaultValue = "0.0 0.0 20.0 20.0"     minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 50.0 50.0"/>
+        <Parameter name = "dirtColor"   target = "dirtColor"   type = "float4" group="base"    defaultValue = "0.20 0.14 0.08 0.0"    minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name = "sssColor"    target = "sssColor"    type = "float4" group="base"    defaultValue = "0.938 0.567 0.567 1.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name = "colorScaleR" target = "colorScaleR" type = "float4" group="base"    defaultValue = "0.500 0.500 0.500 1.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name = "colorScaleG" target = "colorScaleG" type = "float4" group="base"    defaultValue = "0.220 0.250 0.440 1.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+    </Parameters>
+    <UvUsages>
+        <UvUsage textureName="baseMap"   uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="normalMap" uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="glossMap"  uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="mMaskMap"  uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="dirtNmap"  uvType="uv0" uvScale="0.1"/>
+    </UvUsages>
+    <Textures>
+        <Texture name = "mMaskMap" group="base" defaultColorProfile = "linearRGB" defaultFilename = "../shared/default_specular.png"/>
+        <Texture name = "dirtNmap" group="base" defaultColorProfile = "linearRGB" defaultFilename = "../shared/characterDirt_normal.png"/>
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="uv1"   group="uv1"/>
+        <VertexAttribute name="color" group="vtxColor"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name="vertexColor" groups="base vtxColor">
+<![CDATA[
+    #define VERTEX_COLOR
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance = "0">
+        <CodeInjections>
+            <CodeInjection position = "SHARED_START">
+<![CDATA[
+#if GPU_PROFILE >= GPU_PROFILE_HIGH
+    #define SUBSURFACE_SCATTERING
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+    float4 RDT;
+    float4 dirtColor;
+    float4 sssColor;
+    float4 colorScaleR;
+    float4 colorScaleG;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+ /*
+glossMap.r - smoothness (1-roughness)
+glossMap.g - ambient occlusion
+glossMap.b - metallic
+glossMap.a - dirt mask
+
+mMaskMap.r - color mask
+mMaskMap.g - color mask
+mMaskMap.b - subsurface scattering mask
+ */
+sampler2D mMaskMap;
+sampler2D dirtNmap;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+    float4 gGloss;
+    float3 gMask;
+    float  gDirt;
+    float  gThickness;
+    float  gAlpha;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "CONFIG_DEFINES">
+<![CDATA[
+#define MASK_TEXCOORDS GLOSS_MAP_TEXCOORDS
+]]>
+            </CodeInjection>
+            <CodeInjection position = "START_FS">
+<![CDATA[
+    globals.gGloss = float4(0.0,1.0,0.0,0.0);
+#if defined( GLOSS_MAP )
+    globals.gGloss = tex2D( glossMap, GLOSS_MAP_TEXCOORDS).rgba;
+#endif
+    float texDirt  = 1 - globals.gGloss.a;
+    globals.gDirt  = saturate( (texDirt*1.05 - (object.RDT.g - 0.5)) * 2 );
+    globals.gMask = tex2D( mMaskMap, MASK_TEXCOORDS ).rgb;
+    globals.gThickness = globals.gMask.b;
+    globals.gAlpha = 1.0;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+    float3 origDiffuse = diffuseColor;
+    diffuseColor = lerp( origDiffuse,  origDiffuse * object.colorScaleR.rgb, globals.gMask.r );
+    diffuseColor = lerp( diffuseColor, origDiffuse * object.colorScaleG.rgb, globals.gMask.g );
+    diffuseColor = lerp( object.dirtColor, diffuseColor, globals.gDirt); // DirtColor lerp
+#if defined(VERTEX_COLOR)
+    //diffuseColor *= In.vs.vertexColor.rgb;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_GLOSS_COLOR_FS">
+<![CDATA[
+#if defined( SPECULAR ) && defined( GLOSS_MAP )
+    float dirtRoughness = 0.8;
+    // Use w to adjust gloss, but only applied where the mask is active
+    float glossFactorR = 1 - ((1 - object.colorScaleR.w) * globals.gMask.r);
+    float glossFactorG = 1 - ((1 - object.colorScaleG.w) * globals.gMask.g);
+    roughness = lerp(dirtRoughness, 1-globals.gGloss.r * glossFactorR * glossFactorG, globals.gDirt);
+    bakedAO   = globals.gGloss.g;
+    metalness = globals.gGloss.b;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_UNNORMALIZED_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+
+#if defined( NORMAL_MAP )
+    float3 mNormal;
+    #ifdef NORMAL_MAP_SIGNED_2CHANNEL
+        // use BC5 signed format for the normal map
+        mNormal.xy = tex2D(normalMap, NORMAL_MAP_TEXCOORDS).xy;
+        mNormal.z = sqrt(1.0 - dot(mNormal.xy, mNormal.xy));
+    #else
+        mNormal = tex2D(normalMap, NORMAL_MAP_TEXCOORDS).xyz - 0.5;
+    #endif
+    float3 mDirtNmap = tex2D( dirtNmap, float2( object.RDT.z, object.RDT.w ) * ALBEDO_MAP_TEXCOORDS ).xyz - 0.5;
+    return mNormal + float3(mDirtNmap.xy, 0.0) * (1 - globals.gDirt);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+#if defined( NORMAL_MAP )
+    return normalize(getUnnormalizedTangentSpaceNormal(In, globals, object));
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_LIGHTING_FS">
+ <![CDATA[
+ #if defined( SUBSURFACE_SCATTERING )
+    float fLTAmbient =      0.15;
+    float fLTPower =        2.0;
+    float fLTDistortion =   1.0;
+    float fLTScale =        2.0;
+
+    float fLightAttenuation = saturate(dot(normal, lightDir)) + saturate(dot(viewDir, -lightDir));
+
+    float3 vLTLight = lightDir + normal * fLTDistortion;
+    float fLTDot = pow(saturate(dot(viewDir, -vLTLight)), fLTPower) * fLTScale;
+    float fLT = fLightAttenuation * (fLTDot + fLTAmbient) * globals.gThickness;
+    float3 cLT = diffuseColor * lightColor * fLT * object.sssColor.rgb;
+    #if defined(ALPHA_BLENDED)
+        cLT *= globals.gAlpha;
+    #endif
+    // Dirt color
+    cLT *= clamp(globals.gDirt,0.4,1.0);
+    lighting.xyz += cLT * lightAtten;
+    #if defined( DEBUG_SHOW_PARALLAX )
+        lighting.xyz = cLT * lightAtten;
+    #endif
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined(ALPHA_BLENDED) || defined(ALPHA_TESTED)
+    #if defined(VERTEX_COLOR)
+        alpha *= In.vs.vertexColor.a;
+    #endif
+#endif
+#if defined(ALPHA_BLENDED)
+    reflectingLightingScale = alpha;
+    globals.gAlpha = alpha;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="FINAL_POS_FS">
+<![CDATA[
+#if defined( DEBUG_SHOW_PARALLAX )
+    oColor.xyz *= 0.0001;
+    oColor.xyz += lighting;
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

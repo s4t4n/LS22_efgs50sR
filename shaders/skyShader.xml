@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <UvUsages/>
+    <LodLevel startDistance="0" subsequentPassForceMode="ignore">
+        <CodeInjections>
+            <CodeInjection position="VS_END">
+<![CDATA[
+Out.position.z = 0;
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_ENV_MAP_COLOR_FS">
+<![CDATA[
+#if defined(ENV_MAP_SPECULAR)
+        return texCUBElod(envMap, -viewDir, 0).xyz;
+#endif    
+    return float3(0);
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

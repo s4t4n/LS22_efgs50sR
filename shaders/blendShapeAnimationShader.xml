@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name="animOffset"      target="animOffset"      type="float4" defaultValue = "0.0 0.0 0.0 0.0"/>
+        <Parameter name="indicesAndBlend" target="indicesAndBlend" type="float4" defaultValue = "0.0 1.0 0.0 0.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "10.0 10.0 1.0 0.0"/>
+        <Parameter name="speeds"          target="speeds"          type="float4" defaultValue = "0.5 3.0 1.0 1.0"/>
+    </Parameters>
+    <UvUsages>
+        <UvUsage textureName="baseMap"   uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="normalMap" uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="glossMap"  uvType="uv0" uvScale="1.0"/>
+        <UvUsage textureName="animArray" uvType="custom"/>
+    </UvUsages>
+    <VertexAttributes>
+        <VertexAttribute name="uv1" group="base"/>
+    </VertexAttributes>
+    <Textures>
+        <Texture name = "animArray" type = "2dArray" defaultColorProfile = "linearRGB"/>
+    </Textures>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+/*
+0 - animGlide       speed == 0.4
+1 - animFlight      speed == 3.0
+2 - animLand        speed == 3.0
+3 - animStart       speed == 3.0
+4 - animWalk        speed == 3.0
+5 - animEat         speed == 2.0
+6 - animAttention   speed == 1.0
+*/
+sampler2DArray animArray;
+]]>
+            </CodeInjection>
+            <CodeInjection position="OBJECT_PARAMETERS">
+<![CDATA[
+float4 animOffset;
+float4 indicesAndBlend;
+float4 speeds;
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_POSITION_VS">
+<![CDATA[
+    float pIndex = convertDefaultTexCoords(In, object, In.texCoords1.xy).x;
+    float mAnimOffset = 0.1*object.animOffset.x;
+    
+    float3 position0 = tex2Dlod(animArray, float3(pIndex,(cTime_s+mAnimOffset)*object.speeds.x, object.indicesAndBlend.x), 0).xyz;
+    float3 position1 = tex2Dlod(animArray, float3(pIndex,(cTime_s+mAnimOffset)*object.speeds.y, object.indicesAndBlend.y), 0).xyz;
+    // -- blending animations
+    float3 mResult = In.position.xyz + lerp(position0, position1, object.indicesAndBlend.z);
+    return mResult;
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

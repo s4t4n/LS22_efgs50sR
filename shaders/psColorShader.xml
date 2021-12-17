@@ -1,0 +1,199 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "psColor"    target = "psColor"    type = "float4" group="base"     defaultValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name = "alphaShift" target = "alphaShift" type = "float"  group="alphaMap" defaultValue = "0.05" minValue = "0.01" maxValue = "0.99"/>
+        <Parameter name = "uvScale"    target = "uvScale"    type = "float2" group="uvScale"  defaultValue = "0.5 0.5 1.0 1.0"/>
+        <Parameter name = "fillTypeId" target = "fillTypeId" type = "float"  group="fillType" defaultValue = "0"/>
+    </Parameters>
+    <UvUsages/>
+    <Textures>
+        <Texture name="alphaMap"  group="alphaMap" defaultColorProfile = "linearRGB"/>
+        <Texture name="baseMap"   group="fillType" type="2dArray"/>
+        <Texture name="glossMap"  group="fillType" type="2dArray"/>
+        <Texture name="normalMap" group="fillType" type="2dArray"/>
+    </Textures>
+    <Variations>
+        <Variation name = "velocityAligned" groups="base">
+<![CDATA[
+    #define VELOCITY_ALIGNED 
+]]>
+        </Variation>
+        <Variation name = "disableBillboard" groups="base">
+<![CDATA[
+    #define DISABLE_BILLBOARD 
+]]>
+        </Variation>
+        <Variation name="uvScaleAlphaMapGradientDisableBillboard" groups="base uvScale alphaMap">
+<![CDATA[
+    #define UV_SCALE
+    #define ALPHA_TESTED
+    #define ALPHA_MAP
+    #define ALPHA_GRADIENT
+    #define DISABLE_BILLBOARD
+]]>
+        </Variation>
+        <Variation name="fillTypeArray" groups="base uvScale alphaMap fillType">
+<![CDATA[
+    #define UV_SCALE
+    #define ALPHA_TESTED
+    #define ALPHA_MAP
+    #define ALPHA_GRADIENT
+    #define DISABLE_BILLBOARD
+    #define FILLTYPE_ARRAY
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position="SHARED_START">
+<![CDATA[
+#define PARTICLE_SYSTEM
+#if defined(FILLTYPE_ARRAY)
+    #define ALBEDO_MAP_TYPE sampler2DArray
+    #define NORMAL_MAP_TYPE sampler2DArray
+    #define GLOSS_MAP_TYPE  sampler2DArray
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+    float4 psColor;
+#if defined(UV_SCALE)
+    float2 uvScale;
+#endif
+#if defined(ALPHA_GRADIENT)
+/*
+    alphaShift - offset in noise texture used with smoothstep, controlled via VertexColor.a
+*/
+    float alphaShift;
+#endif
+#if defined(FILLTYPE_ARRAY)
+    float  fillTypeId;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+#if defined(ALPHA_MAP)
+    sampler2D alphaMap;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="LIB_FUNCTION_FS">
+<![CDATA[
+float getDepthFade(FS_INPUT In, FS_GLOBALS globals, ObjectParameters& object, float fadeDistance)
+{
+    float screenDepth = In.vs.screenPosZ / In.vs.screenPosW;
+    float screenDepthLinear = convertDepthToEyeZ(screenDepth);
+    float sceneDepthLinear = getLinearSceneDepth(In, globals,object);
+    return saturate((sceneDepthLinear - screenDepthLinear)/fadeDistance);
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position = "CONFIG_DEFINES">
+<![CDATA[
+#if defined(VELOCITY_ALIGNED)
+    #define PARTICLE_SYSTEM_VELOCITY_ALIGNED
+#endif
+#if defined(DISABLE_BILLBOARD)
+    #undef PARTICLE_SYSTEM_BILLBOARD
+#endif
+#if defined(ALPHA_MAP)
+    #define ALPHA_TESTED
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="VS_OUTPUT">
+<![CDATA[
+#if defined(ALPHA_MAP)
+    float2 alphaMapTexCoords : TEXCOORDn;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+#if defined(UV_SCALE)
+    Out.defaultTexCoords = object.uvScale.xy*getDefaultTexCoords(In, object);
+#endif
+#if defined(ALPHA_MAP)
+    Out.alphaMapTexCoords = getDefaultTexCoords(In, object);
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+#if defined(ALPHA_MAP)
+    float  gAlphaMap;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "START_FS">
+<![CDATA[
+#if defined(ALPHA_MAP)
+    globals.gAlphaMap = 1.0;
+    globals.gAlphaMap = tex2D( alphaMap , In.vs.alphaMapTexCoords ).r;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "GET_UNNORMALIZED_TANGENT_SPACE_NORMAL_FS">
+<![CDATA[
+ #if defined( NORMAL_MAP ) && defined(FILLTYPE_ARRAY)
+    float3 mNormal = tex2D(normalMap, float3(NORMAL_MAP_TEXCOORDS, object.fillTypeId)).xyz - 0.5;
+    return mNormal;
+ #endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+#if defined(ALBEDO_MAP) && defined(FILLTYPE_ARRAY)
+    diffuseColor = tex2D(baseMap, float3(ALBEDO_MAP_TEXCOORDS, object.fillTypeId)).xyz;
+#endif
+    diffuseColor *= object.psColor.rgb;
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GLOSS_COLOR_FS">
+<![CDATA[
+#if defined(GLOSS_MAP) && defined(FILLTYPE_ARRAY)
+    pbrMapValues = tex2D(glossMap, float3(GLOSS_MAP_TEXCOORDS, object.fillTypeId));
+    roughness = 1-pbrMapValues.x;
+    bakedAO   = pbrMapValues.y;
+    metalness = pbrMapValues.z;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined(ALPHA_MAP) && defined(ALPHA_TESTED)
+    #if defined(FILLTYPE_ARRAY)
+        alpha = tex2D(baseMap, float3(ALBEDO_MAP_TEXCOORDS, object.fillTypeId)).a;
+    #endif
+    #if defined(ALPHA_GRADIENT)
+        float alphaShift = object.alphaShift;
+        alpha = saturate((-1 + globals.gAlphaMap + alpha - alphaShift) / alphaShift);
+    #else
+        alpha *= globals.gAlphaMap;
+    #endif
+#endif
+#if defined(ALPHA_BLENDED)
+    #if GPU_PROFILE >= GPU_PROFILE_HIGH
+        alpha *= getDepthFade(In, globals, object,0.5);
+    #endif
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_LIGHTING_FS">
+<![CDATA[
+    float NdotLNegative = dot(normal, lightDir);
+    if (NdotLNegative < 0) {
+        NdotLNegative = -NdotLNegative*0.25;
+    }
+    NdotLNegative = min(NdotLNegative, 1);
+    NdotL = saturate(dot(normal, lightDir));
+    lighting = ((atten*NdotLNegative) * diffuseShading + (atten*NdotL)* specularShading )* lightColor;
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

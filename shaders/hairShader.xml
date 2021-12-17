@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "colorScaleR" target = "colorScaleR" type = "float4" group="base" defaultValue = "0.610 0.220 0.090 1.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name = "colorScaleG" target = "colorScaleG" type = "float4" group="base" defaultValue = "0.082 0.027 0.028 1.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+    </Parameters>
+    <UvUsages/>
+    <Textures>
+        <Texture name = "fakeSpecCubeMap" group="base" type = "cube" defaultColorProfile = "linearRGB" defaultFilename = "$dataS/character/humans/textures/shared/hair_cube.dds"/>
+    </Textures>
+    <VertexAttributes>
+        <VertexAttribute name="color" group="vtxColor"/>
+    </VertexAttributes>
+    <Variations>
+        <Variation name="stubbles" groups="base">
+<![CDATA[
+    #define STUBBLES
+]]>
+        </Variation>
+        <Variation name="stubbles_vertexColor" groups="base vtxColor">
+<![CDATA[
+    #define STUBBLES
+    #define VERTEX_COLOR
+]]>
+        </Variation>
+    </Variations>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position = "SHARED_START">
+<![CDATA[
+#if GPU_PROFILE >= GPU_PROFILE_HIGH
+    #if !defined(STUBBLES)
+        #define EXTRA_SHADING
+    #endif
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+    float4 colorScaleG;
+    float4 colorScaleR;
+]]>
+            </CodeInjection>
+            <CodeInjection position = "SAMPLERS">
+<![CDATA[
+#if defined( EXTRA_SHADING )
+    samplerCube fakeSpecCubeMap;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FS_GLOBALS">
+<![CDATA[
+#if defined( EXTRA_SHADING )
+    float3 gExtraFakeSpec;
+    float3 gExtraFresnel;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_DIFFUSE_COLOR_FS">
+<![CDATA[
+diffuseColor *= object.colorScaleG.rgb;
+#if defined( EXTRA_SHADING )
+{
+    globals.gExtraFakeSpec =  texCUBE(fakeSpecCubeMap, normal.xyz).xyz;
+    globals.gExtraFakeSpec *= object.colorScaleR;
+    globals.gExtraFakeSpec *= 0.25; // fake specular intensity
+    globals.gExtraFresnel = float3(1,1,1);
+    globals.gExtraFresnel *= getFresnel( facing, 0.015, 6.0 );
+    globals.gExtraFresnel *= object.colorScaleR;
+    globals.gExtraFresnel *= 0.25; // fresnel intensity 
+}
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "POST_GET_LIGHTING_FS">
+<![CDATA[
+#if defined( EXTRA_SHADING )
+{
+    
+    lighting = (atten*NdotL) * (diffuseShading + specularShading + globals.gExtraFakeSpec) * lightColor;
+    lighting += globals.gExtraFresnel *lightAtten *lightColor;
+}
+
+    float fLTAmbient =      0.15;
+    float fLTPower =        2.0;
+    float fLTDistortion =   1.0;
+    float fLTScale =        2.0;
+
+    float fLightAttenuation = saturate(dot(normal, lightDir)) + saturate(dot(viewDir, -lightDir));
+
+    float3 vLTLight = lightDir + normal * fLTDistortion;
+    float fLTDot = pow(saturate(dot(viewDir, -vLTLight)), fLTPower) * fLTScale;
+    float fLT = fLightAttenuation * (fLTDot + fLTAmbient) ;
+    // Subsurface scattering color is hardcodded 
+    float3 cLT = diffuseColor * lightColor * fLT * float3(0.8,0.8,0.8);
+    lighting.xyz += cLT * lightAtten;
+    #if defined( DEBUG_SHOW_PARALLAX )
+        lighting.xyz = cLT * lightAtten;
+    #endif
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position="ALPHA_FS">
+<![CDATA[
+#if defined(ALPHA_BLENDED) || defined(ALPHA_TESTED)
+    #if defined(VERTEX_COLOR)
+        alpha *= In.vs.vertexColor.a;
+    #endif
+#endif
+#if defined(ALPHA_BLENDED)
+    reflectingLightingScale = alpha;
+#endif
+]]>
+            </CodeInjection>
+            <CodeInjection position = "FINAL_POS_FS">
+<![CDATA[
+#if defined( DEBUG_SHOW_PARALLAX )
+    oColor.xyz *= 0.0001;
+    oColor.rgb  = lighting ;
+#endif    
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>

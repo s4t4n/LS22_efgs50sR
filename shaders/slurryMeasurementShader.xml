@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CustomShader version="5">
+    <Parameters>
+        <Parameter name = "fillLevel"     target = "fillLevel"     type = "float4" defaultValue = "0.0 0.0 0.0 0.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+        <Parameter name = "prevFillLevel" target = "prevFillLevel" type = "float4" defaultValue = "0.0 0.0 0.0 0.0" minValue = "0.0 0.0 0.0 0.0" maxValue = "1.0 1.0 1.0 1.0"/>
+    </Parameters>
+    <UvUsages/>
+    <VertexAttributes>
+        <VertexAttribute name="uv1" group="base"/>
+    </VertexAttributes>
+    <LodLevel startDistance="0">
+        <CodeInjections>
+            <CodeInjection position = "OBJECT_PARAMETERS">
+<![CDATA[
+    /*
+    fillLevel.x - [ 0 .. 1 ] slurry level inside of cylinder
+    fillLevel.y - 0 or 1 indicates if tool is working or not.
+    */
+    float4 fillLevel;
+    float4 prevFillLevel; // fillLevel from previous frame, set by LUA, needed for motionblur
+]]>
+            </CodeInjection>
+            <CodeInjection position="LIB_FUNCTION_VS">
+<![CDATA[
+// Custom vertex functions
+float3 getCustomPositionVS( VS_INPUT    In,
+                      ObjectParameters& object,
+                                float   mTime,
+                                float4  mFillLevel ){
+    // =================================
+    float mOffset = mFillLevel.x;
+    float3 mDeformedPosition = float3( 1, mOffset, 1 ) * In.position.xyz ;
+    mDeformedPosition += lerp( float3( 0.0, 0.0, 0.0 ), float3( 0, 0.05 * In.texCoords1.x, 0 ) * cos( 50 * (In.position.x + In.position.z) + 10 * mTime ), mFillLevel.y );
+    #if defined( DEBUG_SHOW_PARALLAX )
+        mOffset = 0.5 * sin( mTime ) + 0.5;
+        mDeformedPosition = float3( 1, mOffset, 1 ) * In.position.xyz + float3( 0, 0.05 * In.texCoords1.x, 0 ) * cos( 50 * (In.position.x + In.position.z) + 15 * mTime );
+    #endif 
+    return mDeformedPosition;
+}
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_POSITION_VS">
+<![CDATA[
+    return getCustomPositionVS(In, object, cTime_s, object.fillLevel);
+]]>
+            </CodeInjection>
+            <CodeInjection position="GET_PREV_POSITION_VS">
+<![CDATA[
+    return getCustomPositionVS(In, object, cPrevTime_s, object.prevFillLevel);
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_GET_WORLD_POSE_VS">
+<![CDATA[
+    prevWorldPosition = mul(object.prevModelMatrix, float4(prevPosition, 1));
+]]>
+            </CodeInjection>
+            <CodeInjection position="POST_SET_TEXCOORDS_VS">
+<![CDATA[
+#if defined( ALBEDO_MAP ) || defined( EMISSIVE_MAP )
+    float mOffset = object.fillLevel.x;
+    #if defined( DEBUG_SHOW_PARALLAX )
+        mOffset = 0.5 * sin( cTime_s ) + 0.5;
+    #endif 
+    float2 mUV = getDefaultTexCoords(In, object);
+    if ( mUV.y < 0.75 )  // do not touch top UVs
+    {
+        mUV.x *= mOffset; // scale UV based on scaled mesh
+        mUV.x -= 2*mOffset; // move UV in direction of scaling ( secondary motion )
+    }
+    Out.defaultTexCoords = mUV;
+#endif
+]]>
+            </CodeInjection>
+        </CodeInjections>
+    </LodLevel>
+</CustomShader>
