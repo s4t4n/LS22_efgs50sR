@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<sounds xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../../shared/xml/schema/vehicle_sounds.xsd">
+    <motorized>
+        <sounds>
+            <motorStart file="$data/vehicles/jungheinrich/efgS50S/sounds/forkliftElectric_start.wav" innerRadius="5" outerRadius="80" >
+                <volume indoor="1" outdoor="1.0" />
+                <pitch indoor="0.9" outdoor="0.9" />
+                <lowpassGain indoor="1.0" outdoor="1" />
+            </motorStart>
+            <motorStop file="$data/vehicles/jungheinrich/efgS50S/sounds/forkliftElectric_stop.wav" innerRadius="5" outerRadius="80" >
+                <volume indoor="1" outdoor="1.0" />
+                <pitch indoor="0.6" outdoor="0.6" />
+                <lowpassGain indoor="1.0" outdoor="1" />
+            </motorStop>
+            
+            <motor template="engineSmall" file="$data/vehicles/jungheinrich/efgS50S/sounds/efgS50S_loop.gls" volumeScale="2">
+                <volume>
+                    <modifier type="MOTOR_LOAD" value="0.5" modifiedValue="1.00" />
+                    <modifier type="MOTOR_LOAD" value="0.7" modifiedValue="1.00" />
+                    <modifier type="MOTOR_LOAD" value="1.0" modifiedValue="1.20" />
+                    
+                    <modifier type="SPEED" value="0.00" modifiedValue="0.00" />
+                    <modifier type="SPEED" value="2.50" modifiedValue="0.25" />
+                    <modifier type="SPEED" value="5.00" modifiedValue="0.80" />
+                    <modifier type="SPEED" value="15.0" modifiedValue="1.00" />
+                    <modifier type="SPEED" value="43.0" modifiedValue="1.20" />
+                </volume>
+            </motor>
+            <reverseDrive template="REVERSE_BEEP_03" pitchScale="1.2" />
+        </sounds>
+    </motorized>
+
+    <lights>
+        <sounds>
+            <toggleLights template="SWITCH_01"  />
+        </sounds>
+    </lights>
+
+    <attacherJoints>
+        <sounds>
+            <attach template="ATTACH_01" />
+            <hydraulic template="defaultHydraulicSound" />
+        </sounds>
+    </attacherJoints>
+
+    <drivable>
+        <sounds>
+            <waterSplash template="WATER_SPLASH_01" />
+        </sounds>
+    </drivable>
+
+    <honk>
+        <sound template="hornDefault" pitchScale="0.9" linkNode="efgS50S_main_component1" />
+    </honk>
+</sounds>
