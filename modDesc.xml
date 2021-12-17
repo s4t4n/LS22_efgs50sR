@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<modDesc descVersion="60">
+<modDesc descVersion="62">
     <author>SbSh-s4t4n-Modastian</author>
-    <version>1.0.0.7</version>
+    <version>1.0.1.0</version>
     <title>
         <en>Jungheinrich EFG S50S realer</en>
     </title>
     <description>
-        <de>Originaler Stapler mit korrigierter Steuerung und Geschwindigkeit, wie der echte JH und Linde und Still ! Desweiteren ist der Hubmast zum Freihub umgebaut und bis 4,30 Meter teleskopierbar.</de>
-        <en>Original forklift with corrected control and speed, like the real JH and Linde and Still! Furthermore, the lifting mast has been converted into a free lift and can be telescoped up to 4.30 meters. </en>
+        <de>Originaler Stapler mit korrigierter Steuerung und Geschwindigkeit, wie der echte JH und Linde und Still ! Desweiteren ist der Hubmast zum Freihub umgebaut und bis 4,30 Meter teleskopierbar. Lange Gabel 2,40 M</de>
+        <en>Original forklift with corrected control and speed, like the real JH and Linde and Still! Furthermore, the lifting mast has been converted into a free lift and can be telescoped up to 4.30 meters. Long forks 2.40 m</en>
     </description>
     <iconFilename>store_efgS50S.dds</iconFilename>
 	<multiplayer supported="true"/>
