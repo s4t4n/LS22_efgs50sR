@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <vehicle type="teleHandler" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../shared/xml/schema/vehicle.xsd">
     <annotation>Copyright (C) GIANTS Software GmbH, All Rights Reserved.</annotation>
     <storeData>
@@ -31,9 +31,9 @@
         <filename>efgS50S.i3d</filename>
         <sounds filename="$data/vehicles/jungheinrich/efgS50S/sounds/efgS50S.xml"/>
         <size width="2.2" length="4.5" height="2.65" lengthOffset="0.6"/>
-        <components maxMass="6755">
-            <component centerOfMass="0 0.45 0.7" solverIterationCount="35" mass="2005"/>
-            <component centerOfMass="0 -0.03 0" solverIterationCount="10" mass="1250"/>
+        <components maxMass="13036"> <!-- 5t carrymass -->
+            <component centerOfMass="0 0.45 0.7" solverIterationCount="35" mass="5858"/> <!-- ownmass 8 -->
+            <component centerOfMass="0 -0.03 0" solverIterationCount="10" mass="2178"/> <!-- batterie mass -->
             <component solverIterationCount="10" mass="500"/>
             <joint component1="1" component2="2" node="axisJoint" rotLimit="0 0 5" rotLimitSpring="0 0 4000" rotLimitDamping="0 0 75" maxRotDriveForce="0 0 10" rotDriveRotation="0 0 0" rotDriveSpring="0 0 30" rotDriveDamping="0 0 20" breakable="false"/>
             <joint component1="1" component2="3" node="componentJointFork" rotLimit="0 0 0" transLimit="0 0 0" rotLimitSpring="7500 7500 7500" rotLimitDamping="1 1 1" transLimitSpring="7500 7500 7500" transLimitDamping="1 1 1"/>
@@ -275,8 +275,8 @@
     <cylindered>
         <movingTools>
             <movingTool node="arm02" playSound="true">
-                <controls axis="AXIS_FRONTLOADER_TOOL" invertAxis="true" mouseSpeedFactor="0.3" iconName="FORKLIFT_TRANSLATE_Y"/>
-                <animation animName="mainArmMovement" animSpeed="0.2" animAcceleration="1" animStartTime="0.05"/>
+                <controls axis="AXIS_FRONTLOADER_TOOL" invertAxis="true" mouseSpeedFactor="0.03" iconName="FORKLIFT_TRANSLATE_Y"/>
+                <animation animName="mainArmMovement" animSpeed="0.1" animAcceleration="1" animStartTime="0.80"/>
                 <componentJoint index="2" anchorActor="0"/>
             </movingTool>
             <movingTool node="arm01" playSound="true">
