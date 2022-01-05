@@ -6,6 +6,7 @@
   </Asset>
 
   <Files>
+    <File fileId="12" filename="textures/efgS50S_MAST_vmask.dds"/>
     <File fileId="27" filename="$data/shaders/glowShader.xml"/>
     <File fileId="19" filename="$data/shaders/mirrorShader.xml"/>
     <File fileId="4" filename="$data/shaders/vehicleShader.xml"/>
@@ -193,9 +194,11 @@
     </Material>
     <Material name="lambert1" materialId="17" diffuseColor="0.494118 0.494118 0.494118 1">
     </Material>
-    <Material name="Material" materialId="18" diffuseColor="0.129412 0.129412 0.129412 1" emissiveColor="0 0 0 1" specularColor="0.6 1 1" customShaderId="4">
-      <CustomParameter name="RDT" value="0.5 0 0 0"/>
-      <CustomParameter name="dirtColor" value="0.2 0.14 0.08 0"/>
+    <Material name="Material" materialId="18" diffuseColor="0.0196078 0.0196078 0.0196078 1" emissiveColor="0 0 0 1" customShaderId="4" customShaderVariation="uvScale">
+      <Glossmap fileId="12"/>
+      <CustomParameter name="RDT" value="1 1 0 0"/>
+      <CustomParameter name="dirtColor" value="0.041 0.025 0.014 0"/>
+      <CustomParameter name="uvScale" value="1 0.025 0 0.421"/>
     </Material>
     <Material name="mirror_mat" materialId="19" diffuseColor="0 0 0 1" specularColor="0 1 1" customShaderId="19">
       <Reflectionmap lodDistanceScaling="0.5" viewDistanceScaling="0.5" type="planar" scaling="1" refractiveIndex="10" bumpScale="0.1" shapesObjectMask="4294967295" lightsObjectMask="4294967295"/>
@@ -229,7 +232,7 @@
       <Shape shapeId="1" name="efgS50S_main_component1" dynamic="true" compound="true" collisionMask="2109442" clipDistance="300" nodeId="77" materialIds="17" castsShadows="true" receiveShadows="true" nonRenderable="true">
         <Shape shapeId="2" name="efgS50S_vis" clipDistance="300" nodeId="78" materialIds="6" castsShadows="true" receiveShadows="true" skinBindNodeIds="78 133 134 135 136 137 139 176 177 217 219 224 228 258 259 261 263 264 266 268 269">
           <TransformGroup name="wheels" nodeId="79">
-            <TransformGroup name="wheelFrontLeft" translation="0.603987 0.35049 0.93409" nodeId="80"/>
+            <TransformGroup name="wheelFrontLeft" translation="0.603987 0.35049 0.934" nodeId="80"/>
             <TransformGroup name="wheelFrontRight" translation="-0.604 0.35049 0.93409" nodeId="81"/>
           </TransformGroup>
           <TransformGroup name="cameras" nodeId="82">
@@ -311,7 +314,7 @@
                       <Shape shapeId="13" name="Gabel" translation="0.177 -0.223 0.466744" rotation="-90.0032 89.6666 -90.003" nodeId="138" materialIds="18" castsShadows="true" receiveShadows="true" distanceBlending="false"/>
                     </TransformGroup>
                     <TransformGroup name="tineRight" clipDistance="300" nodeId="139">
-                      <Shape shapeId="13" name="Gabel" translation="-0.177 -0.223 0.466744" rotation="-90.0032 89.6666 -90.0032" nodeId="140" materialIds="18" castsShadows="true" receiveShadows="true" distanceBlending="false"/>
+                      <Shape shapeId="13" name="Gabel" translation="-0.177 -0.223 0.467" rotation="-90.0032 89.6666 -90.0032" nodeId="140" materialIds="18" castsShadows="true" receiveShadows="true" distanceBlending="false"/>
                     </TransformGroup>
                     <TransformGroup name="tineHolderJoint" nodeId="141"/>
                     <TransformGroup name="componentJointFork" translation="0 0.235311 0.491021" nodeId="142"/>
@@ -507,17 +510,17 @@
       <Shape shapeId="52" name="efgS50S_fork_component3" translation="0 0.416801 1.53" dynamic="true" compound="true" collisionMask="2109442" clipDistance="300" nodeId="272" materialIds="17" castsShadows="true" receiveShadows="true" nonRenderable="true">
         <TransformGroup name="tineHolderPhy" translation="0 -0.235311 -0.491021" nodeId="273">
           <TransformGroup name="tineLeftPhy" nodeId="274">
-            <Shape shapeId="53" name="dynamicMountTriggerLeft" translation="0.173647 -0.109 2.11043" rotation="0.3 0 0" compoundChild="true" collisionMask="134225920" nodeId="275" materialIds="17" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
-            <Shape shapeId="54" name="tineCollisionLeft" translation="0.173647 -0.109 1.919" scale="1 1 2" compoundChild="true" collisionMask="134225920" nodeId="276" materialIds="17" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
+            <Shape shapeId="53" name="dynamicMountTriggerLeft" translation="0.173647 -0.1 2.11" scale="1 0.5 1" visibility="false" compoundChild="true" collisionMask="134225920" nodeId="275" materialIds="17" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
+            <Shape shapeId="54" name="tineCollisionLeft" translation="0.173647 -0.1 1.93507" scale="1 0.5 1.4" visibility="false" compoundChild="true" collisionMask="134225920" nodeId="276" materialIds="17" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
           </TransformGroup>
           <TransformGroup name="tineRightPhy" nodeId="277">
-            <Shape shapeId="53" name="dynamicMountTriggerRight" translation="-0.174071 -0.109 2.11026" rotation="0.3 -0 0" compoundChild="true" collisionMask="134225920" nodeId="278" materialIds="17" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
-            <Shape shapeId="54" name="tineCollisionRight" translation="-0.174071 -0.109 1.919" scale="1 1 2" compoundChild="true" collisionMask="134225920" nodeId="279" materialIds="17" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
+            <Shape shapeId="53" name="dynamicMountTriggerRight" translation="-0.174071 -0.1 2.11" scale="1 0.5 1" visibility="false" compoundChild="true" collisionMask="134225920" nodeId="278" materialIds="17" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
+            <Shape shapeId="54" name="tineCollisionLeft" translation="-0.174 -0.1 1.935" scale="1 0.5 1.4" visibility="false" compoundChild="true" collisionMask="134225920" nodeId="279" materialIds="17" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
           </TransformGroup>
         </TransformGroup>
-        <TransformGroup name="jointNode" translation="0 -0.390023 0.469888" nodeId="280"/>
+        <TransformGroup name="jointNode" translation="0 -0.3 0.94" nodeId="280"/>
       </Shape>
-      <Camera name="workcamera" translation="2.05339 0.946549 3.70712" rotation="-4.81697 49.4298 -1.41529e-06" nodeId="281" fov="60" nearClip="0.1" farClip="10000" orthographicHeight="1"/>
+      <Camera name="workcamera" translation="1.83061 1.07074 3.64739" rotation="-90.9936 43.4674 0" nodeId="281" fov="60" nearClip="0.1" farClip="10000" orthographicHeight="1"/>
   </Scene>
 
   <UserAttributes>
