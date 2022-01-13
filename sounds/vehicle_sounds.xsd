@@ -1,0 +1,1081 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:simpleType name="g_hyphen">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="-"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_float_or_hyphen">
+        <xs:union memberTypes="xs:float g_hyphen"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_vector_float">
+        <xs:list itemType="g_float_or_hyphen"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_string">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_l10n_string">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_float">
+        <xs:restriction base="xs:float"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_angle">
+        <xs:restriction base="xs:float"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_time">
+        <xs:restriction base="xs:float"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_int">
+        <xs:restriction base="xs:integer"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_bool">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="true|false"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_node_index">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_node_indices">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_vector_2">
+        <xs:restriction base="g_vector_float">
+            <xs:pattern value="\S+ \S+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_vector_3">
+        <xs:restriction base="g_vector_float">
+            <xs:pattern value="\S+ \S+ \S+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_vector_4">
+        <xs:restriction base="g_vector_float">
+            <xs:pattern value="\S+ \S+ \S+ \S+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_vector_n">
+        <xs:restriction base="g_vector_float"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_vector_trans">
+        <xs:restriction base="g_vector_float">
+            <xs:pattern value="\S+ \S+ \S+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_vector_rot">
+        <xs:restriction base="g_vector_float">
+            <xs:pattern value="\S+ \S+ \S+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_vector_rot_2">
+        <xs:restriction base="g_vector_float">
+            <xs:pattern value="\S+ \S+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_vector_scale">
+        <xs:restriction base="g_vector_float">
+            <xs:pattern value="\S+ \S+ \S+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="g_color">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
+    <xs:complexType name="SoundManager_sound">
+        <xs:choice maxOccurs="unbounded">
+            <xs:element name="lowpassCutoffFrequency" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="indoor" type="g_float" default="5000"/>
+                    <xs:attribute name="outdoor" type="g_float" default="5000"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="lowpassGain" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="modifier" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:attribute name="modifiedValue" type="g_float"/>
+                                <xs:attribute name="type" type="g_string"/>
+                                <xs:attribute name="value" type="g_float"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:choice>
+                    <xs:attribute name="indoor" type="g_float" default="0.8"/>
+                    <xs:attribute name="outdoor" type="g_float" default="1"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="lowpassResonance" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:attribute name="indoor" type="g_float" default="2"/>
+                    <xs:attribute name="outdoor" type="g_float" default="2"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="pitch" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="modifier" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:attribute name="modifiedValue" type="g_float"/>
+                                <xs:attribute name="type" type="g_string"/>
+                                <xs:attribute name="value" type="g_float"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:choice>
+                    <xs:attribute name="indoor" type="g_float" default="1"/>
+                    <xs:attribute name="outdoor" type="g_float" default="1"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="randomization" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:attribute name="isInside" type="g_bool" default="true"/>
+                    <xs:attribute name="isOutside" type="g_bool" default="true"/>
+                    <xs:attribute name="maxLowpassGain" type="g_float"/>
+                    <xs:attribute name="maxPitch" type="g_float"/>
+                    <xs:attribute name="maxVolume" type="g_float"/>
+                    <xs:attribute name="minLowpassGain" type="g_float"/>
+                    <xs:attribute name="minPitch" type="g_float"/>
+                    <xs:attribute name="minVolume" type="g_float"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="sourceRandomization" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:attribute name="file" type="g_string"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="volume" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="modifier" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:attribute name="modifiedValue" type="g_float"/>
+                                <xs:attribute name="type" type="g_string"/>
+                                <xs:attribute name="value" type="g_float"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:choice>
+                    <xs:attribute name="indoor" type="g_float" default="0.8"/>
+                    <xs:attribute name="outdoor" type="g_float" default="1"/>
+                </xs:complexType>
+            </xs:element>
+        </xs:choice>
+        <xs:attribute name="debug" type="g_bool" default="false"/>
+        <xs:attribute name="fadeIn" type="g_float" default="0"/>
+        <xs:attribute name="fadeOut" type="g_float" default="0"/>
+        <xs:attribute name="file" type="g_string"/>
+        <xs:attribute name="innerRadius" type="g_float" default="80"/>
+        <xs:attribute name="isLocalSound" type="g_bool" default="false"/>
+        <xs:attribute name="linkNode" type="g_node_index"/>
+        <xs:attribute name="linkNodeOffset" type="g_vector_trans"/>
+        <xs:attribute name="loops" type="g_int" default="1"/>
+        <xs:attribute name="loopSynthesisRPMRatio" type="g_float" default="1"/>
+        <xs:attribute name="lowpassGainScale" type="g_float" default="1"/>
+        <xs:attribute name="outerRadius" type="g_float" default="5"/>
+        <xs:attribute name="parent" type="g_string"/>
+        <xs:attribute name="pitchScale" type="g_float" default="1"/>
+        <xs:attribute name="supportsReverb" type="g_bool" default="true"/>
+        <xs:attribute name="template" type="g_string"/>
+        <xs:attribute name="volumeScale" type="g_float" default="1"/>
+    </xs:complexType>
+
+    <xs:element name="sounds">
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="animations" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:choice maxOccurs="unbounded">
+                            <xs:element name="animation" minOccurs="0" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="sound" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                        <xs:element name="stopTimeNegSound" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                        <xs:element name="stopTimePosSound" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:choice>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="attacherJointControl" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="hydraulic" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="attacherJoints" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:choice maxOccurs="unbounded">
+                            <xs:element name="attacherJoint" minOccurs="0" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="attachSound" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="detachSound" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="attacherJointConfigurations" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="attacherJointConfiguration" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:choice maxOccurs="unbounded">
+                                                    <xs:element name="attacherJoint" minOccurs="0" maxOccurs="unbounded">
+                                                        <xs:complexType>
+                                                            <xs:all>
+                                                                <xs:element name="attachSound" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="detachSound" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                            </xs:all>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:choice>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="attach" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="detach" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="hydraulic" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:choice>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="baleLoader" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="emptyRotate" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="grab" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="unload" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="baler" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="door" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="eject" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="knotCleaning" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="unload" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="baleWrapper" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="roundBaleWrapper" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="start" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                    <xs:element name="stop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                    <xs:element name="wrap" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                </xs:all>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="squareBaleWrapper" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="start" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                    <xs:element name="stop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                    <xs:element name="wrap" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                </xs:all>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="bunkerSiloCompacter" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="compacting" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="rolling" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="combine" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="chopperStart" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="chopperStop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="chopperWork" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="chopStraw" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="dropStraw" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="fill" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="start" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="stop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="conveyorBelt" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="belt" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="cultivator" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="cutter" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="cut" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="cylindered" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="actionSound" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                        <xs:element name="hydraulic" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="dischargeable" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:choice maxOccurs="unbounded">
+                            <xs:element name="dischargeableConfigurations" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="dischargeableConfiguration" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:choice maxOccurs="unbounded">
+                                                    <xs:element name="dischargeNode" minOccurs="0" maxOccurs="unbounded">
+                                                        <xs:complexType>
+                                                            <xs:choice maxOccurs="unbounded">
+                                                                <xs:element name="dischargeSound" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="dischargeStateSound" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:choice>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="dischargeNode" minOccurs="0" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="dischargeSound" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="dischargeStateSound" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:choice>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="drivable" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="waterSplash" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="enterable" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="rain" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="fillUnit" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="fillUnitConfigurations" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="fillUnitConfiguration" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="fillUnits" minOccurs="0" maxOccurs="1">
+                                                        <xs:complexType>
+                                                            <xs:choice maxOccurs="unbounded">
+                                                                <xs:element name="fillUnit" minOccurs="0" maxOccurs="unbounded">
+                                                                    <xs:complexType>
+                                                                        <xs:all>
+                                                                            <xs:element name="alarmTriggers" minOccurs="0" maxOccurs="1">
+                                                                                <xs:complexType>
+                                                                                    <xs:choice maxOccurs="unbounded">
+                                                                                        <xs:element name="alarmTrigger" minOccurs="0" maxOccurs="unbounded">
+                                                                                            <xs:complexType>
+                                                                                                <xs:all>
+                                                                                                    <xs:element name="alarmSound" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                                                </xs:all>
+                                                                                            </xs:complexType>
+                                                                                        </xs:element>
+                                                                                    </xs:choice>
+                                                                                </xs:complexType>
+                                                                            </xs:element>
+                                                                        </xs:all>
+                                                                    </xs:complexType>
+                                                                </xs:element>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="fill" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="frontloaderConfigurations" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:choice maxOccurs="unbounded">
+                            <xs:element name="frontloaderConfiguration" minOccurs="0" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="attacherJoint" minOccurs="0" maxOccurs="1">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="attachSound" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                    <xs:element name="detachSound" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                </xs:all>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:choice>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="fruitPreparer" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="honk" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sound" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="inlineWrapper" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="start" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="stop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="wrap" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="lights" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="toggleLights" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="turnLight" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="motorized" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="motorConfigurations" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="motorConfiguration" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                                        <xs:complexType>
+                                                            <xs:choice maxOccurs="unbounded">
+                                                                <xs:element name="airCompressorRun" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="airCompressorStart" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="airCompressorStop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="airRelease" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="blowOffValve" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="brake" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="clutchCracking" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="compressedAir" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="gearbox" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="gearDisengaged" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="gearEngaged" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="gearGroupChange" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="gearGroupLeverEnd" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="gearGroupLeverStart" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="gearLeverEnd" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="gearLeverStart" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="motor" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                                                <xs:element name="motorStart" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="motorStop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="retarder" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="reverseDrive" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="airCompressorRun" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="airCompressorStart" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="airCompressorStop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="airRelease" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="blowOffValve" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="brake" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="clutchCracking" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="compressedAir" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="gearbox" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="gearDisengaged" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="gearEngaged" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="gearGroupChange" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="gearGroupLeverEnd" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="gearGroupLeverStart" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="gearLeverEnd" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="gearLeverStart" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="motor" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                        <xs:element name="motorStart" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="motorStop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="retarder" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="reverseDrive" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="mower" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="cut" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="mulcher" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="pallet" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="unload" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="parentFile" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="plow" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="plowConfigurations" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="plowConfiguration" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                                        <xs:complexType>
+                                                            <xs:all>
+                                                                <xs:element name="turn" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                            </xs:all>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="turn" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="rideable" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="breathingEffort" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="breathingNoEffort" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="halt" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="roller" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="rollerConfigurations" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="rollerConfiguration" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="roller" minOccurs="0" maxOccurs="1">
+                                                        <xs:complexType>
+                                                            <xs:all>
+                                                                <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                                                    <xs:complexType>
+                                                                        <xs:all>
+                                                                            <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                        </xs:all>
+                                                                    </xs:complexType>
+                                                                </xs:element>
+                                                            </xs:all>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="sowingMachine" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="airBlower" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="sprayer" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="spray" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="sprayTypes" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="sprayType" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                                        <xs:complexType>
+                                                            <xs:all>
+                                                                <xs:element name="spray" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                            </xs:all>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="stonePicker" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="stone" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="strawBlower" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="start" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="stop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="stumpCutter" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="idle" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="start" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="stop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="tensionBelts" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="tensionBeltsConfigurations" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="tensionBeltsConfiguration" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="tensionBelts" minOccurs="0" maxOccurs="1">
+                                                        <xs:complexType>
+                                                            <xs:all>
+                                                                <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                                                    <xs:complexType>
+                                                                        <xs:all>
+                                                                            <xs:element name="addBelt" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                            <xs:element name="removeBelt" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                            <xs:element name="toggleBelt" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                        </xs:all>
+                                                                    </xs:complexType>
+                                                                </xs:element>
+                                                            </xs:all>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="trailer" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="trailerConfigurations" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="trailerConfiguration" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="trailer" minOccurs="0" maxOccurs="1">
+                                                        <xs:complexType>
+                                                            <xs:choice maxOccurs="unbounded">
+                                                                <xs:element name="tipSide" minOccurs="0" maxOccurs="unbounded">
+                                                                    <xs:complexType>
+                                                                        <xs:all>
+                                                                            <xs:element name="unloadSound" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                                                        </xs:all>
+                                                                    </xs:complexType>
+                                                                </xs:element>
+                                                            </xs:choice>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="treePlanter" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="treeSaw" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="cut" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="saw" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="turnOnVehicle" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:choice maxOccurs="unbounded">
+                                        <xs:element name="start" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                        <xs:element name="stop" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="unbounded"/>
+                                    </xs:choice>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="waterTrailer" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="refill" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="weeder" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="windrower" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="woodCrusher" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="idle" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="start" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="stop" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="work" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="woodHarvester" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="sounds" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="cut" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                        <xs:element name="delimb" type="SoundManager_sound" minOccurs="0" maxOccurs="1"/>
+                                    </xs:all>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                    </xs:complexType>
+                </xs:element>
+            </xs:all>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
