@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<vehicle type="teleHandler" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../shared/xml/schema/vehicle.xsd">
+<vehicle type="teleHandler" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="shared/vehicle.xsd">
     <annotation>Copyright (C) GIANTS Software GmbH, All Rights Reserved.</annotation>
     <storeData>
         <name>
@@ -131,6 +131,8 @@
                 <raycastNode node="cameraRaycastNode3"/>
             </camera>
             <camera node="indoorCamera1" rotatable="true" limit="true" rotMinX="-1.1" rotMaxX="0.8" transMin="0" transMax="0" useMirror="true" isInside="true" useOutdoorSounds="true" shadowFocusBox="shadowFocusBox"/>
+            <camera node="forkCamera" rotatable="false" limit="true" rotMinX="-0.1" rotMaxX="0.1" rotMinZ="-0.2" rotMaxZ="0.2" transMin="0" transMax="0" allowHeadTracking="false" useWorldXZRotation="false" useMirror="false" isInside="true" useOutdoorSounds="false" shadowFocusBox="shadowFocusBox"/>
+			<!-- <camera node="forkCamera" rotatable="false" useWorldXZRotation="false" allowHeadTracking="false" /> -->
         </cameras>
         <characterNode node="playerSkin" cameraMinDistance="0.5" spineRotation="-90 0 90">
             <target ikChain="rightFoot" targetNode="playerRightFootTarget"/>
@@ -239,7 +241,7 @@
     <animations>
         <animation name="mainArmMovement">  <!-- Freihub-Mast Umbau -->
 			<part node="arm03" startTime="2" endTime="4"   startTrans="0 1.181 0"	   animSpeed="0.005" endTrans="0 2.626 0"/>  <!-- Gabelträger -->
-			<part node="arm03" startTime="0" endTime="0.3"   startTrans="0 0 0"	   animSpeed="0.005" endTrans="0 0.2 0"/>  <!-- Gabelträger -->
+			<part node="arm03" startTime="0" endTime="0.3"   startTrans="0 -0.02 0"	   animSpeed="0.005" endTrans="0 0.2 0"/>  <!-- Gabelträger -->
 			<part node="arm03" startTime="0.3" endTime="0.80" startTrans="0 0.2 0" animSpeed="0.1" endTrans="0 1.181 0"/>  <!-- Gabelträger -->
             <part node="arm02" startTime="0.80" endTime="1" startTrans="0 0.01 0" animSpeed="0.005" endTrans="0 0.2 0"/>  <!-- Hubmast innen -->
             <part node="arm02" startTime="1" endTime="2.4" startTrans="0 0.2 0"  animSpeed="0.1" endTrans="0 1.676 0"/>  <!-- Hubmast innen -->
@@ -374,12 +376,12 @@
         </material>
     </baseMaterial>
 	
-	<baseMaterialConfigurations price="1600" useDefaultColors="true" defaultColorIndex="2">
+	<baseMaterialConfigurations price="1600" useDefaultColors="true" defaultColorIndex="2" title="Verkleidung">
 		<material name="efgS50S_mat" shaderParameter="colorMat0"/>
-		<material name="efgS50S_mat" shaderParameter="colorMat0"/>
+		<!-- <material name="efgS50S_mat" shaderParameter="colorMat0"/> -->
 	</baseMaterialConfigurations>
 	
-	<baseMaterialConfigurations price="720" useDefaultColors="true" defaultColorIndex="7">
+	<baseMaterialConfigurations price="720" useDefaultColors="true" defaultColorIndex="7" title="Whatever">
 		<material name="efgS50S_mat" shaderParameter="colorMat1"/>
 	</baseMaterialConfigurations>
 	
@@ -394,6 +396,7 @@
         <i3dMapping id="outdoorCameraTarget" node="0>0|1|0"/>
         <i3dMapping id="outdoorCamera1" node="0>0|1|0|0"/>
         <i3dMapping id="indoorCamera1" node="0>0|1|1"/>
+        <i3dMapping id="forkCamera" node="0>0|4|0|0|0|0|4"/>
         <i3dMapping id="cameraRaycastNode1" node="0>0|1|2"/>
         <i3dMapping id="cameraRaycastNode2" node="0>0|1|3"/>
         <i3dMapping id="cameraRaycastNode3" node="0>0|1|4"/>
