@@ -4,4 +4,5 @@ Der Gabelstapler Jungheinrich EFG S50S Real
 mit korrigierter Steuerung, Animation, Freihub, Teleskop
 
 
-direktdownload  -> https://github.com/s4t4n/LS22_efgs50sR/releases/
+
+[![YouTube](https://img.youtube.com/vi/y1rouwKYkFA/maxresdefault.jpg)](https://www.youtube.com/watch?v=y1rouwKYkFA)
