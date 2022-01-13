@@ -29,12 +29,12 @@
     <base>
         <typeDesc>$l10n_typeDesc_telehandler</typeDesc>
         <filename>efgS50S.i3d</filename>
-        <sounds filename="$data/vehicles/jungheinrich/efgS50S/sounds/efgS50S.xml"/>
+        <sounds filename="sounds/efgS50S.xml"/>
         <size width="2.2" length="4.5" height="2.65" lengthOffset="0.6"/>
         <components maxMass="13036"> <!-- 5t carrymass -->
-            <component centerOfMass="0 0.45 0.7" solverIterationCount="35" mass="5858"/> <!-- ownmass 8 -->
-            <component centerOfMass="0 -0.03 0" solverIterationCount="10" mass="2178"/> <!-- batterie mass -->
-            <component solverIterationCount="10" mass="500"/>
+            <component centerOfMass="0 0.45 0.7" solverIterationCount="35" mass="2178"/> <!-- ownmass 8 5858 (5436)-->
+            <component centerOfMass="0 -0.03 0" solverIterationCount="10" mass="5858"/> <!-- batterie mass 2178 (2600)-->
+            <component solverIterationCount="10" mass="500"/> <!-- Forks -->
             <joint component1="1" component2="2" node="axisJoint" rotLimit="0 0 5" rotLimitSpring="0 0 4000" rotLimitDamping="0 0 75" maxRotDriveForce="0 0 10" rotDriveRotation="0 0 0" rotDriveSpring="0 0 30" rotDriveDamping="0 0 20" breakable="false"/>
             <joint component1="1" component2="3" node="componentJointFork" rotLimit="0 0 0" transLimit="0 0 0" rotLimitSpring="7500 7500 7500" rotLimitDamping="1 1 1" transLimitSpring="7500 7500 7500" transLimitDamping="1 1 1"/>
         </components>
