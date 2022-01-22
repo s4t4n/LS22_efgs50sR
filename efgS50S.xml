@@ -64,7 +64,7 @@
         <ackermannSteeringConfigurations>
             <ackermannSteering rotSpeed="40" rotMax="84" rotCenterWheel1="1" rotCenterWheel2="2"/>
         </ackermannSteeringConfigurations>
-        <rimColor>SHARED_DA_METAL_BLACK</rimColor>
+        <!-- <rimColor>SHARED_DA_METAL_BLACK</rimColor> -->
         <hubs>
             <color0>SHARED_DA_METAL_BLACK</color0>
             <color1>SHARED_GREY3</color1>
@@ -74,6 +74,35 @@
             <hub linkNode="wheelBackRight" filename="$data/shared/wheels/hubs/hub_n6_1.xml" isLeft="false" scale="0.1 0.15 0.15" offset="0.005"/>
         </hubs>
     </wheels>
+	<rimColorConfigurations useDefaultColors="false">
+		<rimColorConfiguration name="White" 			color="SHARED_WHITE2" 					price="0"/>
+		<rimColorConfiguration name="Original RED"		color="1 0 0 0" 		material="0" 	price="0"/>
+		<rimColorConfiguration name="RED Chrome"		color="1 0 0" 			material="2" 	price="4532" />
+		<rimColorConfiguration name="RED Blech"			color="1 0 0" 			material="8" 	price="741" />
+		<rimColorConfiguration name="RED MATT"			color="1 0 0" 			material="1" 	price="842" />
+		<rimColorConfiguration name="RED SATIN"			color="1 0 0" 			material="27" 	price="845" />
+		<rimColorConfiguration name="RED METALLIC"		color="1 0 0" 			material="3" 	price="1337" />
+		<rimColorConfiguration name="Hirschfeld" 		color="0.83 0.18 0.004" material="0" 	price="555" />
+		<rimColorConfiguration name="ORANGE"			color="STARA_ORANGE"	material="0" 	price="720" />
+		<rimColorConfiguration name="ORANGE MATTE"		color="STARA_ORANGE"	material="1" 	price="842" />
+		<rimColorConfiguration name="ORANGE SATIN"		color="STARA_ORANGE"	material="27" 	price="845" />
+		<rimColorConfiguration name="ORANGE METALLIC"	color="STARA_ORANGE"	material="3" 	price="1337" />
+		<rimColorConfiguration name="ORANGE Chrome"		color="STARA_ORANGE"	material="2" 	price="4738" />
+		<rimColorConfiguration name="ORANGE Blech"		color="STARA_ORANGE"	material="8" 	price="741" />
+		<rimColorConfiguration name="GOLD METALLIC"		color="KRONE_YELLOW1"	material="3" 	price="2475" />
+		<rimColorConfiguration name="BLACK SATIN"		color="SHARED_BLACK2"	material="27" 	price="845" />
+		<rimColorConfiguration name="BLACK MATTE"		color="SHARED_BLACK2"	material="1" 	price="842" />
+		<rimColorConfiguration name="BLACK METALLIC"	color="SHARED_BLACK2"	material="3" 	price="1337" />
+		<rimColorConfiguration name="BLACK Blech"		color="SHARED_BLACK2"	material="8" 	price="741" />
+		<rimColorConfiguration name="Chrome"			color="0.6 0.6 0.6"		material="2" 	price="4324" />
+		<rimColorConfiguration name="GREY METALLIC"		color="SHARED_WHITE2"	material="3" 	price="1337" />
+		<rimColorConfiguration name="Stainless Steel"	color="0.5 0.5 0.6" 	material="4" 	price="2022" />
+		<rimColorConfiguration name="Verzinkt Klarlack"	color="0.4 0.5 0.4"		material="19" 	price="1400" />
+		<rimColorConfiguration name="Verzinkt"			color="0.4 0.5 0.4"		material="9" 	price="1200" />
+		<rimColorConfiguration name="GREEN MATTE (%)"	color="KRONE_GREEN1"	material="1" 	price="50" />
+		<rimColorConfiguration name="GREEN SATIN"		color="KRONE_GREEN1"	material="27" 	price="845" />
+		<rimColorConfiguration name="GREEN METALLIC"	color="KRONE_GREEN1"	material="3" 	price="1337" />
+    </rimColorConfigurations>
     <lights>
         <states>
             <state lightTypes="0"/>
@@ -376,9 +405,37 @@
         </material>
     </baseMaterial>
 	
-	<baseMaterialConfigurations price="1600" useDefaultColors="true" defaultColorIndex="2" title="Verkleidung">
+	<baseMaterialConfigurations price="1600" useDefaultColors="false" defaultColorIndex="2" title="Verkleidung">
 		<material name="efgS50S_mat" shaderParameter="colorMat0"/>
-		<!-- <material name="efgS50S_mat" shaderParameter="colorMat0"/> -->
+		
+		<baseMaterialConfiguration name="Original Gelb"	color="JUNGHEINRICH_YELLOW1" material="0" 	price="0"/>	
+		<baseMaterialConfiguration name="Original Grau"	color="JUNGHEINRICH_GREY1" 	material="0" 	price="0"/>	
+		<baseMaterialConfiguration name="Red"				color="1 0 0 0" 		material="0" 	price="0"/>	
+		<baseMaterialConfiguration name="RED Chrome"		color="1 0 0" 			material="2" 	price="4532" />	
+		<baseMaterialConfiguration name="RED Blech"			color="1 0 0" 			material="8" 	price="741" />	
+		<baseMaterialConfiguration name="RED MATT"			color="1 0 0" 			material="1" 	price="842" />	
+		<baseMaterialConfiguration name="RED SATIN"			color="1 0 0" 			material="27" 	price="845" />	
+		<baseMaterialConfiguration name="RED METALLIC"		color="1 0 0" 			material="3" 	price="1337" />
+		<baseMaterialConfiguration name="Hirschfeld" 		color="0.83 0.18 0.004 0" material="0" 	price="555" />
+		<baseMaterialConfiguration name="ORANGE"			color="STARA_ORANGE"	material="0" 	price="720" />
+		<baseMaterialConfiguration name="ORANGE MATTE"		color="STARA_ORANGE"	material="1" 	price="842" />
+		<baseMaterialConfiguration name="ORANGE SATIN"		color="STARA_ORANGE"	material="27" 	price="845" />
+		<baseMaterialConfiguration name="ORANGE METALLIC"	color="STARA_ORANGE"	material="3" 	price="1337" />
+		<baseMaterialConfiguration name="ORANGE Chrome"		color="STARA_ORANGE"	material="2" 	price="4738" />
+		<baseMaterialConfiguration name="ORANGE Blech"		color="STARA_ORANGE"	material="8" 	price="741" />
+		<baseMaterialConfiguration name="GOLD METALLIC"		color="KRONE_YELLOW1"	material="3" 	price="2475" />
+		<baseMaterialConfiguration name="BLACK SATIN"		color="SHARED_BLACK2"	material="27" 	price="845" />
+		<baseMaterialConfiguration name="BLACK MATTE"		color="SHARED_BLACK2"	material="1" 	price="842" />
+		<baseMaterialConfiguration name="BLACK METALLIC"	color="SHARED_BLACK2"	material="3" 	price="1337" />
+		<baseMaterialConfiguration name="BLACK Blech"		color="SHARED_BLACK2"	material="8" 	price="741" />
+		<baseMaterialConfiguration name="Chrome"			color="0.6 0.6 0.6"		material="2" 	price="4324" />
+		<baseMaterialConfiguration name="GREY METALLIC"		color="SHARED_WHITE2"	material="3" 	price="1337" />
+		<baseMaterialConfiguration name="Stainless Steel"	color="0.5 0.5 0.6" 	material="4" 	price="2022" />
+		<baseMaterialConfiguration name="Verzinkt Klarlack"	color="0.4 0.5 0.4"		material="19" 	price="1400" />		
+		<baseMaterialConfiguration name="Verzinkt"			color="0.4 0.5 0.4"		material="9" 	price="1200" />		
+		<baseMaterialConfiguration name="GREEN MATTE (%)"	color="KRONE_GREEN1"	material="1" 	price="50" />
+		<baseMaterialConfiguration name="GREEN SATIN"		color="KRONE_GREEN1"	material="27" 	price="845" />
+		<baseMaterialConfiguration name="GREEN METALLIC"	color="KRONE_GREEN1"	material="3" 	price="1337" />
 	</baseMaterialConfigurations>
 	
 	<baseMaterialConfigurations price="720" useDefaultColors="true" defaultColorIndex="7" title="Whatever">
